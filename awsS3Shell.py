@@ -7,25 +7,74 @@ import boto3
 # session = boto3.Session(profile_name='kaylee')
 # dev_s3_client = session.client('s3')
 
-def other():
-    list_buckets_resp = dev_s3_client.list_buckets()
-    for bucket in list_buckets_resp['Buckets']:
-        if bucket['Name'] == bucket_name:
-            print('(Just created) --> {} - there since {}'.format(
-                bucket['Name'], bucket['CreationDate']))
+def cd(client):
+    print("WIP")
 
-    bucket_name = 'test-{}'.format(uuid.uuid4())
-    print('Creating new bucket with name: {}'.format(bucket_name))
-    dev_s3_client.create_bucket(Bucket=bucket_name)
+
+def cp(client):
+    print("WIP")
+
+
+def download(client):
+    print("WIP")
+
+
+def mkbucket(client, name=None):
+    if name:
+        try:
+            client.create_bucket(Bucket=name)
+        except Exception as e:
+            print(e)
+
+    else:
+        print("Missing argument")
+
+
+def mkdir(client):
+    print("WIP")
+
+
+def mv(client):
+    print("WIP")
+
+
+def ls(client):
+    for bucket in client.buckets.all():
+        print(bucket.name)
+
+
+def pwd(client):
+    print("WIP")
+
+
+def rmdir(client):
+    print("WIP")
+
+
+def rm(client):
+    print("WIP")
+
+
+def upload(client):
+    print("WIP")
 
 
 def login():
     file = open("config.ini", "r")
     info = file.read().splitlines()
-    print(len(info))
-    print(info[1])
 
-    client = boto3.client('s3', info[1], info[2])
+    region = info[1].split(" ")
+    accessKeyId = info[2].split(" ")
+    secretKey = info[3].split(" ")
+    sessionToken = info[4].split(" ")
+
+    client = boto3.resource(service_name='s3',
+                            region_name=region[2],
+                            aws_access_key_id=accessKeyId[2],
+                            aws_secret_access_key=secretKey[2],
+                            aws_session_token=sessionToken[2]
+                            )
+    return(client)
 
 
 def availableCommands():
@@ -48,42 +97,65 @@ def availableCommands():
 
 
 def main():
-    print("> ", end='')
-    userInput = input()
-    if userInput == "help":
-        availableCommands()
-    elif "cd " in userInput:
-        print("WIP")
-    elif "cp " in userInput:
-        print("WIP")
-    elif "download " in userInput:
-        print("WIP")
-    elif userInput == "exit" or userInput == "logout" or userInput == "quit":
-        print("BYE!")
-        exit(1)
-    elif "login" in userInput:
-        login()
-    elif "ls" in userInput:
-        print("WIP")
-    elif "mkbucket" in userInput:
-        print("WIP")
-    elif "mkdir" in userInput:
-        print("WIP")
-    elif "mv " in userInput:
-        print("WIP")
-    elif "pwd" in userInput:
-        print("WIP")
-    elif "rmdir" in userInput:
-        print("WIP")
-    elif "rm " in userInput:
-        print("WIP")
-    elif "upload" in userInput:
-        print("WIP")
-    else:
-        print("Invalid command")
+    print("Please enter a command\nType 'help' to list available commands")
+    userLoggedIn = False
+    client = None
+
+    while(True):
+        print("> ", end='')
+        userInput = input().split(" ")
+
+        if userLoggedIn == False:
+            if userInput[0] == "help":
+                availableCommands()
+            elif userInput[0] == "login":
+                try:
+                    client = login()
+                    userLoggedIn = True
+                    print("Login Successful")
+                except Exception as e:
+                    print(e)
+            else:
+                print("Please login before executing a command")
+        else:
+            if userInput[0] == "help":
+                availableCommands()
+            elif userInput[0] == "cd":
+                cd(client)
+            elif userInput[0] == "cp":
+                cp(client)
+            elif userInput[0] == "download":
+                download(client)
+            elif userInput[0] == "exit" or userInput[0] == "logout" or userInput[0] == "quit":
+                if len(userInput) == 1:
+                    print("BYE!")
+                    exit(1)
+                else:
+                    print("Invalid arguments")
+            elif userInput[0] == "login":
+                login()
+            elif userInput[0] == "ls":
+                ls(client)
+            elif userInput[0] == "mkbucket":
+                mkbucket(client, userInput[1])
+            elif userInput[0] == "mkdir":
+                mkdir(client)
+            elif userInput[0] == "mv":
+                mv(client)
+            elif userInput[0] == "pwd":
+                if len(userInput) == 1:
+                    pwd(client)
+                else:
+                    print("Invalid arguments")
+            elif userInput[0] == "rmdir":
+                rmdir(client)
+            elif userInput[0] == "rm":
+                rm(client)
+            elif userInput[0] == "upload":
+                upload(client)
+            else:
+                print("Invalid command")
 
 
 if __name__ == "__main__":
-    print("Please enter a command\nType 'help' to list available commands")
-    while(True):
-        main()
+    main()
