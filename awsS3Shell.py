@@ -11,12 +11,49 @@ def cd(client):
     print("WIP")
 
 
-def cp(client):
-    print("WIP")
+def cp(client, path, originalFile, newFile):
+    if originalFile and newFile:
+        try:
+            if "/" in originalFile:
+                bucket1 = originalFile.split("/")[0]
+            else:
+                bucket1 = path.split("/")[0]
+            if "/" in newFile:
+                bucket2 = newFile.split("/")[0]
+            else:
+                bucket2 = path.split("/")[0]
+            filePath1 = originalFile.replace(bucket1+"/", "", 1)
+            filePath2 = newFile.replace(bucket2+"/", "", 1)
+            print("bucket1: "+bucket1)
+            print("bucket2: "+bucket2)
+            print("filepath1: "+filePath1)
+            print("filepath2: "+filePath2)
+
+            client.Object(bucket2, filePath2).copy_from(
+                CopySource=bucket1+"/"+filePath1)
+        except Exception as e:
+            print(e)
+
+    else:
+        print("Invalid argument")
 
 
-def download(client):
-    print("WIP")
+def download(client, path, originalFile=None, newFile=None):
+    if originalFile and newFile:
+        try:
+            if "/" in originalFile:
+                bucket = originalFile.split("/")[0]
+            else:
+                bucket = path.split("/")[0]
+            filePath = originalFile.replace(bucket+"/", "", 1)
+            print("bucket: "+bucket)
+            print("path: "+filePath)
+            client.download_file(bucket, filePath, newFile)
+        except Exception as e:
+            print(e)
+
+    else:
+        print("Invalid argument")
 
 
 def mkbucket(client, name=None):
@@ -34,8 +71,12 @@ def mkdir(client):
     print("WIP")
 
 
-def mv(client):
-    print("WIP")
+def mv(client, path, originalFile=None, newFile=None):
+    try:
+        cp(client, path, originalFile, newFile)
+        rm(client, path, originalFile)
+    except Exception as e:
+        print(e)
 
 
 def ls(client):
@@ -51,12 +92,40 @@ def rmdir(client):
     print("WIP")
 
 
-def rm(client):
-    print("WIP")
+def rm(client, path, file=None):
+    if file:
+        try:
+            if "/" in file:
+                bucket = file.split("/")[0]
+            else:
+                bucket = path.split("/")[0]
+            filePath = file.replace(bucket+"/", "", 1)
+            print("bucket: "+bucket)
+            print("path: "+filePath)
+            client.Object(bucket, filePath).delete()
+        except Exception as e:
+            print(e)
+
+    else:
+        print("Invalid argument")
 
 
-def upload(client):
-    print("WIP")
+def upload(client, path, originalFile=None, newFile=None):
+    if originalFile and newFile:
+        try:
+            if "/" in newFile:
+                bucket = newFile.split("/")[0]
+            else:
+                bucket = path.split("/")[0]
+            filePath = newFile.replace(bucket+"/", "", 1)
+            print("bucket: "+bucket)
+            print("path: "+filePath)
+            client.upload_file(originalFile, bucket, filePath)
+        except Exception as e:
+            print(e)
+
+    else:
+        print("Invalid argument")
 
 
 def login():
@@ -68,13 +137,19 @@ def login():
     secretKey = info[3].split(" ")
     sessionToken = info[4].split(" ")
 
-    client = boto3.resource(service_name='s3',
-                            region_name=region[2],
-                            aws_access_key_id=accessKeyId[2],
-                            aws_secret_access_key=secretKey[2],
-                            aws_session_token=sessionToken[2]
-                            )
-    return(client)
+    resource = boto3.resource(service_name='s3',
+                              region_name=region[2],
+                              aws_access_key_id=accessKeyId[2],
+                              aws_secret_access_key=secretKey[2],
+                              aws_session_token=sessionToken[2]
+                              )
+    client = boto3.client(service_name='s3',
+                          region_name=region[2],
+                          aws_access_key_id=accessKeyId[2],
+                          aws_secret_access_key=secretKey[2],
+                          aws_session_token=sessionToken[2]
+                          )
+    return resource, client
 
 
 def availableCommands():
@@ -100,6 +175,8 @@ def main():
     print("Please enter a command\nType 'help' to list available commands")
     userLoggedIn = False
     client = None
+    resource = None
+    path = None
 
     while(True):
         print("> ", end='')
@@ -110,7 +187,7 @@ def main():
                 availableCommands()
             elif userInput[0] == "login":
                 try:
-                    client = login()
+                    resource, client = login()
                     userLoggedIn = True
                     print("Login Successful")
                 except Exception as e:
@@ -123,36 +200,54 @@ def main():
             elif userInput[0] == "cd":
                 cd(client)
             elif userInput[0] == "cp":
-                cp(client)
+                if len(userInput) == 3:
+                    cp(resource, path, userInput[1], userInput[2])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "download":
-                download(client)
+                if len(userInput) == 3:
+                    download(client, path, userInput[1], userInput[2])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "exit" or userInput[0] == "logout" or userInput[0] == "quit":
                 if len(userInput) == 1:
                     print("BYE!")
                     exit(1)
                 else:
-                    print("Invalid arguments")
+                    print("Too many arguments")
             elif userInput[0] == "login":
                 login()
             elif userInput[0] == "ls":
-                ls(client)
+                ls(resource)
             elif userInput[0] == "mkbucket":
-                mkbucket(client, userInput[1])
+                if len(userInput) == 2:
+                    mkbucket(client, userInput[1])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "mkdir":
                 mkdir(client)
             elif userInput[0] == "mv":
-                mv(client)
+                if len(userInput) == 3:
+                    mv(resource, path, userInput[1], userInput[2])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "pwd":
                 if len(userInput) == 1:
                     pwd(client)
                 else:
-                    print("Invalid arguments")
+                    print("Too many arguments")
             elif userInput[0] == "rmdir":
                 rmdir(client)
             elif userInput[0] == "rm":
-                rm(client)
+                if len(userInput) == 2:
+                    rm(resource, path, userInput[1])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "upload":
-                upload(client)
+                if len(userInput) == 3:
+                    upload(client, path, userInput[1], userInput[2])
+                else:
+                    print("Missing arguments")
             else:
                 print("Invalid command")
 
