@@ -8,7 +8,8 @@ import boto3
 # dev_s3_client = session.client('s3')
 
 def cd(client):
-    print("WIP")
+    for my_bucket_object in my_bucket.objects.all():
+        print(my_bucket_object)
 
 
 def cp(client, path, originalFile, newFile):
@@ -24,11 +25,6 @@ def cp(client, path, originalFile, newFile):
                 bucket2 = path.split("/")[0]
             filePath1 = originalFile.replace(bucket1+"/", "", 1)
             filePath2 = newFile.replace(bucket2+"/", "", 1)
-            print("bucket1: "+bucket1)
-            print("bucket2: "+bucket2)
-            print("filepath1: "+filePath1)
-            print("filepath2: "+filePath2)
-
             client.Object(bucket2, filePath2).copy_from(
                 CopySource=bucket1+"/"+filePath1)
         except Exception as e:
@@ -46,8 +42,6 @@ def download(client, path, originalFile=None, newFile=None):
             else:
                 bucket = path.split("/")[0]
             filePath = originalFile.replace(bucket+"/", "", 1)
-            print("bucket: "+bucket)
-            print("path: "+filePath)
             client.download_file(bucket, filePath, newFile)
         except Exception as e:
             print(e)
@@ -67,8 +61,19 @@ def mkbucket(client, name=None):
         print("Missing argument")
 
 
-def mkdir(client):
-    print("WIP")
+def mkdir(client, path, folder=None):
+    if folder:
+        try:
+            if "/" in folder:
+                bucket = folder.split("/")[0]
+            else:
+                bucket = path.split("/")[0]
+            folderPath = folder.replace(bucket+"/", "", 1)
+            client.put_object(Bucket=bucket, Body='', Key=folderPath+"/")
+        except Exception as e:
+            print(e)
+    else:
+        print("Invalid arguments")
 
 
 def mv(client, path, originalFile=None, newFile=None):
@@ -88,8 +93,20 @@ def pwd(client):
     print("WIP")
 
 
-def rmdir(client):
-    print("WIP")
+def rmdir(client, path, folder):
+    if folder:
+        try:
+            if "/" in folder:
+                bucketName = folder.split("/")[0]
+            else:
+                bucketName = path.split("/")[0]
+            folderPath = folder.replace(bucketName+"/", "", 1)
+            bucket = client.Bucket(bucketName)
+            bucket.objects.filter(Prefix=folderPath+"/").delete()
+        except Exception as e:
+            print(e)
+    else:
+        print("Invalid arguments")
 
 
 def rm(client, path, file=None):
@@ -100,8 +117,6 @@ def rm(client, path, file=None):
             else:
                 bucket = path.split("/")[0]
             filePath = file.replace(bucket+"/", "", 1)
-            print("bucket: "+bucket)
-            print("path: "+filePath)
             client.Object(bucket, filePath).delete()
         except Exception as e:
             print(e)
@@ -118,8 +133,6 @@ def upload(client, path, originalFile=None, newFile=None):
             else:
                 bucket = path.split("/")[0]
             filePath = newFile.replace(bucket+"/", "", 1)
-            print("bucket: "+bucket)
-            print("path: "+filePath)
             client.upload_file(originalFile, bucket, filePath)
         except Exception as e:
             print(e)
@@ -225,7 +238,10 @@ def main():
                 else:
                     print("Missing arguments")
             elif userInput[0] == "mkdir":
-                mkdir(client)
+                if len(userInput) == 2:
+                    mkdir(client, path, userInput[1])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "mv":
                 if len(userInput) == 3:
                     mv(resource, path, userInput[1], userInput[2])
@@ -237,7 +253,10 @@ def main():
                 else:
                     print("Too many arguments")
             elif userInput[0] == "rmdir":
-                rmdir(client)
+                if len(userInput) == 2:
+                    rmdir(resource, path, userInput[1])
+                else:
+                    print("Missing arguments")
             elif userInput[0] == "rm":
                 if len(userInput) == 2:
                     rm(resource, path, userInput[1])
