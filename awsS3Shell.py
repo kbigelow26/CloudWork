@@ -4,9 +4,7 @@ import uuid
 import boto3
 
 
-def cd(client, path, newlocation):
-    # get all buckets
-    originalPath = path
+def generatePath(client, path, newlocation):
     bucketArray = []
     for bucket in client.buckets.all():
         bucketArray.append(bucket.name)
@@ -16,6 +14,11 @@ def cd(client, path, newlocation):
         path = path.split("/")
 
     if newlocation:
+        if newlocation[0] == "/":
+            path = []
+            newlocation = newlocation.replace("/", "", 1)
+        if newlocation[-1:] == "/":
+            newlocation = newlocation[:-1]
         for loc in newlocation.split("/"):
             if loc == "~":
                 path = []
@@ -26,12 +29,21 @@ def cd(client, path, newlocation):
                 if loc in bucketArray and len(path) == 0:
                     path.append(loc)
                 elif loc not in bucketArray and len(path) == 0:
-                    print("Invalid Path - A")
-                    return originalPath
+                    print("Invalid Path")
+                    return "error"
                 else:
                     path.append(loc)
+        return path
     else:
         print("Missing Arguements")
+        return "error"
+
+
+def cd(client, path, newlocation):
+    # get all buckets
+    originalPath = path
+    path = generatePath(client, path, newlocation)
+    if path == "error":
         return originalPath
 
     if len(path) > 0:
@@ -42,15 +54,15 @@ def cd(client, path, newlocation):
         path = '/'.join(path)
         path = path.replace(bucketName+"/", "", 1)
         for my_bucket_object in my_bucket.objects.all():
-            print("path: " + path)
-            print("compare: "+my_bucket_object.key)
             if my_bucket_object.key[-1:] == "/":
                 curr = my_bucket_object.key[:-1]
+                isFolder = True
             else:
                 curr = my_bucket_object.key
-            if path == curr:
+                isFolder = False
+            if path == curr and isFolder:
                 return bucketName + "/" + path
-        print("Invalid Path - B")
+        print("Invalid Path")
         return originalPath
     else:
         return None
@@ -59,18 +71,20 @@ def cd(client, path, newlocation):
 def cp(client, path, originalFile, newFile):
     if originalFile and newFile:
         try:
-            if "/" in originalFile:
-                bucket1 = originalFile.split("/")[0]
+            newFilePath = generatePath(client, path, newFile)
+            originalFilePath = generatePath(client, path, originalFile)
+            if len(newFilePath) > 0 and len(originalFilePath) > 0:
+                bucket2 = newFilePath[0]
+                newFilePath = '/'.join(newFilePath)
+                filePath2 = newFilePath.replace(bucket2+"/", "", 1)
+                bucket1 = originalFilePath[0]
+                originalFilePath = '/'.join(originalFilePath)
+                filePath1 = originalFilePath.replace(bucket1+"/", "", 1)
+
+                client.Object(bucket2, filePath2).copy_from(
+                    CopySource=bucket1+"/"+filePath1)
             else:
-                bucket1 = path.split("/")[0]
-            if "/" in newFile:
-                bucket2 = newFile.split("/")[0]
-            else:
-                bucket2 = path.split("/")[0]
-            filePath1 = originalFile.replace(bucket1+"/", "", 1)
-            filePath2 = newFile.replace(bucket2+"/", "", 1)
-            client.Object(bucket2, filePath2).copy_from(
-                CopySource=bucket1+"/"+filePath1)
+                print("Missing Argumnets")
         except Exception as e:
             print(e)
 
@@ -78,15 +92,15 @@ def cp(client, path, originalFile, newFile):
         print("Invalid argument")
 
 
-def download(client, path, originalFile=None, newFile=None):
+def download(client, resource, path, originalFile=None, newFile=None):
     if originalFile and newFile:
         try:
-            if "/" in originalFile:
-                bucket = originalFile.split("/")[0]
-            else:
-                bucket = path.split("/")[0]
-            filePath = originalFile.replace(bucket+"/", "", 1)
-            client.download_file(bucket, filePath, newFile)
+            newPath = generatePath(resource, path, originalFile)
+            if len(newPath) > 0:
+                bucket = newPath[0]
+                newPath = '/'.join(newPath)
+                filePath = newPath.replace(bucket+"/", "", 1)
+                client.download_file(bucket, filePath, newFile)
         except Exception as e:
             print(e)
 
@@ -105,15 +119,17 @@ def mkbucket(client, name=None):
         print("Missing argument")
 
 
-def mkdir(client, path, folder=None):
+def mkdir(client, resource, path, folder=None):
     if folder:
         try:
-            if "/" in folder:
-                bucket = folder.split("/")[0]
+            newPath = generatePath(resource, path, folder)
+            if len(newPath) > 0:
+                bucket = newPath[0]
+                newPath = '/'.join(newPath)
+                folderPath = newPath.replace(bucket+"/", "", 1)
+                client.put_object(Bucket=bucket, Body='', Key=folderPath+"/")
             else:
-                bucket = path.split("/")[0]
-            folderPath = folder.replace(bucket+"/", "", 1)
-            client.put_object(Bucket=bucket, Body='', Key=folderPath+"/")
+                print("Invalid arguments")
         except Exception as e:
             print(e)
     else:
@@ -159,28 +175,32 @@ def rmdir(client, path, folder):
 def rm(client, path, file=None):
     if file:
         try:
-            if "/" in file:
-                bucket = file.split("/")[0]
+            newPath = generatePath(client, path, file)
+            if len(newPath) > 0:
+                bucket = newPath[0]
+                newPath = '/'.join(newPath)
+                filePath = newPath.replace(bucket+"/", "", 1)
+                client.Object(bucket, filePath).delete()
             else:
-                bucket = path.split("/")[0]
-            filePath = file.replace(bucket+"/", "", 1)
-            client.Object(bucket, filePath).delete()
+                print("Missing Arguments")
         except Exception as e:
             print(e)
-
     else:
         print("Invalid argument")
 
 
-def upload(client, path, originalFile=None, newFile=None):
+def upload(client, resource, path, originalFile=None, newFile=None):
     if originalFile and newFile:
         try:
-            if "/" in newFile:
-                bucket = newFile.split("/")[0]
+            newPath = generatePath(resource, path, newFile)
+            if len(newPath) > 0:
+                bucket = newPath[0]
+                newPath = '/'.join(newPath)
+                filePath = newPath.replace(bucket+"/", "", 1)
+                client.upload_file(originalFile, bucket, filePath)
             else:
-                bucket = path.split("/")[0]
-            filePath = newFile.replace(bucket+"/", "", 1)
-            client.upload_file(originalFile, bucket, filePath)
+                print("Missing Arguments")
+                return
         except Exception as e:
             print(e)
 
@@ -269,7 +289,8 @@ def main():
                     print("Missing arguments")
             elif userInput[0] == "download":
                 if len(userInput) == 3:
-                    download(client, path, userInput[1], userInput[2])
+                    download(client, resource, path,
+                             userInput[1], userInput[2])
                 else:
                     print("Missing arguments")
             elif userInput[0] == "exit" or userInput[0] == "logout" or userInput[0] == "quit":
@@ -289,7 +310,7 @@ def main():
                     print("Missing arguments")
             elif userInput[0] == "mkdir":
                 if len(userInput) == 2:
-                    mkdir(client, path, userInput[1])
+                    mkdir(client, resource, path, userInput[1])
                 else:
                     print("Missing arguments")
             elif userInput[0] == "mv":
@@ -314,7 +335,7 @@ def main():
                     print("Missing arguments")
             elif userInput[0] == "upload":
                 if len(userInput) == 3:
-                    upload(client, path, userInput[1], userInput[2])
+                    upload(client, resource, path, userInput[1], userInput[2])
                 else:
                     print("Missing arguments")
             else:
