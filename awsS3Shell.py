@@ -144,9 +144,31 @@ def mv(client, path, originalFile=None, newFile=None):
         print(e)
 
 
-def ls(client):
-    for bucket in client.buckets.all():
-        print(bucket.name)
+def ls(client, path, flag=None):
+    try:
+        if flag and flag == "-l":
+            print("flag is good")
+        elif not flag:
+            if path:
+                newPath = path.split("/")
+                bucketName = newPath[0]
+                bucket = client.Bucket(bucketName)
+                newPath = '/'.join(newPath) + "/"
+                newPath = newPath.replace(bucketName+"/", "", 1)
+                for my_bucket_object in bucket.objects.all():
+                    if newPath in my_bucket_object.key:
+                        position = my_bucket_object.key.replace(newPath, "", 1)
+                        if position[-1:] == "/" and len(position.split("/")) == 2:
+                            print("-dir-  "+position)
+                        elif len(position.split("/")) == 1:
+                            print("   hi    "+position)
+            else:
+                for bucket in client.buckets.all():
+                    print("-dir-  "+bucket.name)
+        else:
+            print("Invaid argument")
+    except Exception as e:
+        print(e)
 
 
 def pwd(path):
@@ -159,13 +181,25 @@ def pwd(path):
 def rmdir(client, path, folder):
     if folder:
         try:
-            if "/" in folder:
-                bucketName = folder.split("/")[0]
+            newPath = generatePath(client, path, folder)
+            if len(newPath) > 0:
+                bucketName = newPath[0]
+                newPath = '/'.join(newPath) + "/"
+                folderPath = newPath.replace(bucketName+"/", "", 1)
+                bucket = client.Bucket(bucketName)
+                newPath = newPath.replace(bucketName+"/", "", 1)
+                emptyFolder = True
+                for my_bucket_object in bucket.objects.all():
+                    if newPath in my_bucket_object.key:
+                        if my_bucket_object.key != newPath:
+                            emptyFolder = False
+                if emptyFolder:
+                    bucket.objects.filter(Prefix=folderPath).delete()
+                else:
+                    print("Directory must be empty")
             else:
-                bucketName = path.split("/")[0]
-            folderPath = folder.replace(bucketName+"/", "", 1)
-            bucket = client.Bucket(bucketName)
-            bucket.objects.filter(Prefix=folderPath+"/").delete()
+                print("Missing Arguments")
+
         except Exception as e:
             print(e)
     else:
@@ -302,7 +336,12 @@ def main():
             elif userInput[0] == "login":
                 login()
             elif userInput[0] == "ls":
-                ls(resource)
+                if len(userInput) == 1:
+                    ls(resource, path)
+                elif len(userInput) == 2:
+                    ls(resource, path, userInput[1])
+                else:
+                    print("Invalid arguments")
             elif userInput[0] == "mkbucket":
                 if len(userInput) == 2:
                     mkbucket(client, userInput[1])
