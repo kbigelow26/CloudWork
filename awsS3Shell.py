@@ -144,29 +144,48 @@ def mv(client, path, originalFile=None, newFile=None):
         print(e)
 
 
-def ls(client, path, flag=None):
+def printAllInfo(client, bucketName, key, name):
+    info = client.head_object(Bucket=bucketName, Key=key)
+    print(str(info['ContentType']) + "\t" + str(info['ContentLength']) +
+          "\t"+str(info['LastModified']) + "\t"+name)
+
+
+def ls(resource, client, path, flag=None):
     try:
-        if flag and flag == "-l":
-            print("flag is good")
-        elif not flag:
-            if path:
-                newPath = path.split("/")
-                bucketName = newPath[0]
-                bucket = client.Bucket(bucketName)
-                newPath = '/'.join(newPath) + "/"
-                newPath = newPath.replace(bucketName+"/", "", 1)
-                for my_bucket_object in bucket.objects.all():
-                    if newPath in my_bucket_object.key:
-                        position = my_bucket_object.key.replace(newPath, "", 1)
-                        if position[-1:] == "/" and len(position.split("/")) == 2:
+        if path:
+            newPath = path.split("/")
+            bucketName = newPath[0]
+            bucket = resource.Bucket(bucketName)
+            newPath = '/'.join(newPath) + "/"
+            newPath = newPath.replace(bucketName+"/", "", 1)
+            for my_bucket_object in bucket.objects.all():
+                if newPath in my_bucket_object.key:
+                    position = my_bucket_object.key.replace(newPath, "", 1)
+                    if position[-1:] == "/" and len(position.split("/")) == 2:
+                        if flag and flag == "-l":
+                            printAllInfo(client, bucketName,
+                                         my_bucket_object.key, position)
+                        elif not flag:
                             print("-dir-  "+position)
-                        elif len(position.split("/")) == 1:
-                            print("   hi    "+position)
-            else:
-                for bucket in client.buckets.all():
-                    print("-dir-  "+bucket.name)
+                        else:
+                            print("Invalid argument")
+                    elif len(position.split("/")) == 1:
+                        if flag and flag == "-l":
+                            printAllInfo(client, bucketName,
+                                         my_bucket_object.key, position)
+                        elif not flag:
+                            print("       "+position)
+                        else:
+                            print("Invalid argument")
         else:
-            print("Invaid argument")
+            if flag and flag == "-l":
+                # printAllInfo(bucket, my_bucket_object.key)
+                print()
+            elif not flag:
+                for bucket in resource.buckets.all():
+                    print("-dir-  "+bucket.name)
+            else:
+                print("Invalid argument")
     except Exception as e:
         print(e)
 
@@ -337,9 +356,9 @@ def main():
                 login()
             elif userInput[0] == "ls":
                 if len(userInput) == 1:
-                    ls(resource, path)
+                    ls(resource, client, path)
                 elif len(userInput) == 2:
-                    ls(resource, path, userInput[1])
+                    ls(resource, client, path, userInput[1])
                 else:
                     print("Invalid arguments")
             elif userInput[0] == "mkbucket":
