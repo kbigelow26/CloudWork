@@ -14,9 +14,10 @@ def generatePath(client, path, newlocation):
         path = path.split("/")
 
     if newlocation:
-        if newlocation[0] == "/":
+        if newlocation.split("/")[0] == "s3:":
             path = []
-            newlocation = newlocation.replace("/", "", 1)
+            print("yay")
+            newlocation = newlocation.replace("s3:/", "", 1)
         if newlocation[-1:] == "/":
             newlocation = newlocation[:-1]
         for loc in newlocation.split("/"):
@@ -37,6 +38,21 @@ def generatePath(client, path, newlocation):
     else:
         print("Missing Arguements")
         return "error"
+
+
+def checkExists(client, loc):
+    my_bucket = client.Bucket(loc[0])
+    bucketName = loc[0]
+    loc = '/'.join(loc)
+    filePath = loc.replace(bucketName+"/", "", 1)
+    for my_bucket_object in my_bucket.objects.all():
+        if my_bucket_object.key[-1:] == "/":
+            curr = my_bucket_object.key[:-1]
+        else:
+            curr = my_bucket_object.key
+        if filePath == curr:
+            return True
+    return False
 
 
 def cd(client, path, newlocation):
@@ -73,6 +89,8 @@ def cp(client, path, originalFile, newFile):
         try:
             newFilePath = generatePath(client, path, newFile)
             originalFilePath = generatePath(client, path, originalFile)
+            if newFilePath == "error" or originalFilePath == "error":
+                return
             if len(newFilePath) > 0 and len(originalFilePath) > 0:
                 bucket2 = newFilePath[0]
                 newFilePath = '/'.join(newFilePath)
@@ -96,6 +114,8 @@ def download(client, resource, path, originalFile=None, newFile=None):
     if originalFile and newFile:
         try:
             newPath = generatePath(resource, path, originalFile)
+            if newPath == "error":
+                return
             if len(newPath) > 0:
                 bucket = newPath[0]
                 newPath = '/'.join(newPath)
@@ -108,9 +128,13 @@ def download(client, resource, path, originalFile=None, newFile=None):
         print("Invalid argument")
 
 
-def mkbucket(client, name=None):
+def mkbucket(client, resource, name=None):
     if name:
         try:
+            for bucket in resource.buckets.all():
+                if bucket == name:
+                    print("Bucket already exists")
+                    return
             client.create_bucket(Bucket=name)
         except Exception as e:
             print(e)
@@ -123,13 +147,20 @@ def mkdir(client, resource, path, folder=None):
     if folder:
         try:
             newPath = generatePath(resource, path, folder)
-            if len(newPath) > 0:
-                bucket = newPath[0]
-                newPath = '/'.join(newPath)
-                folderPath = newPath.replace(bucket+"/", "", 1)
-                client.put_object(Bucket=bucket, Body='', Key=folderPath+"/")
+            if newPath == "error":
+                return
+            if not checkExists(resource, newPath):
+                if len(newPath) > 1:
+                    bucket = newPath[0]
+                    newPath = '/'.join(newPath)
+                    folderPath = newPath.replace(bucket+"/", "", 1)
+                    client.put_object(Bucket=bucket, Body='',
+                                      Key=folderPath+"/")
+                else:
+                    print("Invalid arguments")
             else:
-                print("Invalid arguments")
+                print("Path already exists")
+                return
         except Exception as e:
             print(e)
     else:
@@ -201,6 +232,8 @@ def rmdir(client, path, folder):
     if folder:
         try:
             newPath = generatePath(client, path, folder)
+            if newPath == "error":
+                return
             if len(newPath) > 0:
                 bucketName = newPath[0]
                 newPath = '/'.join(newPath) + "/"
@@ -225,17 +258,27 @@ def rmdir(client, path, folder):
         print("Invalid arguments")
 
 
-def rm(client, path, file=None):
+def rm(client, path, file=None, flag=None):
     if file:
         try:
             newPath = generatePath(client, path, file)
-            if len(newPath) > 0:
-                bucket = newPath[0]
-                newPath = '/'.join(newPath)
-                filePath = newPath.replace(bucket+"/", "", 1)
-                client.Object(bucket, filePath).delete()
+            if newPath == "error":
+                return
+            exists = checkExists(client, newPath)
+            if exists:
+                if len(newPath) > 0:
+                    bucket = newPath[0]
+                    newPath = '/'.join(newPath)
+                    filePath = newPath.replace(bucket+"/", "", 1)
+                    if flag and flag == "-rf":
+                        my_bucket = client.Bucket(bucket)
+                        my_bucket.objects.filter(Prefix=filePath).delete()
+                    else:
+                        client.Object(bucket, filePath).delete()
+                else:
+                    print("Missing Arguments")
             else:
-                print("Missing Arguments")
+                print("Invalid Path")
         except Exception as e:
             print(e)
     else:
@@ -246,14 +289,20 @@ def upload(client, resource, path, originalFile=None, newFile=None):
     if originalFile and newFile:
         try:
             newPath = generatePath(resource, path, newFile)
-            if len(newPath) > 0:
-                bucket = newPath[0]
-                newPath = '/'.join(newPath)
-                filePath = newPath.replace(bucket+"/", "", 1)
-                client.upload_file(originalFile, bucket, filePath)
-            else:
-                print("Missing Arguments")
+            if newPath == "error":
                 return
+            exists = checkExists(client, newPath)
+            if exists:
+                if len(newPath) > 0:
+                    bucket = newPath[0]
+                    newPath = '/'.join(newPath)
+                    filePath = newPath.replace(bucket+"/", "", 1)
+                    client.upload_file(originalFile, bucket, filePath)
+                else:
+                    print("Missing Arguments")
+                    return
+            else:
+                print("Invalid Path")
         except Exception as e:
             print(e)
 
@@ -299,7 +348,7 @@ def availableCommands():
     print("mv <S3 object name> <S3 object name> - moves an object from one S3 location to another")
     print("pwd - displays position in the directory tree")
     print("quit - terminates connection")
-    print("rm <S3 object name> - deletes object")
+    print("rm <-rf> <S3 object name> - deletes object, <-rf> is an optional flag that recurrively deletes everything in a folder")
     print("rmdir <directory> - removes directory")
     print("upload <local filename> <S3 object name> - copies local file to S3 object store")
 
@@ -363,7 +412,7 @@ def main():
                     print("Invalid arguments")
             elif userInput[0] == "mkbucket":
                 if len(userInput) == 2:
-                    mkbucket(client, userInput[1])
+                    mkbucket(client, resource, userInput[1])
                 else:
                     print("Missing arguments")
             elif userInput[0] == "mkdir":
@@ -389,13 +438,15 @@ def main():
             elif userInput[0] == "rm":
                 if len(userInput) == 2:
                     rm(resource, path, userInput[1])
+                elif len(userInput) == 3:
+                    rm(resource, path, userInput[2], userInput[1])
                 else:
                     print("Missing arguments")
             elif userInput[0] == "upload":
                 if len(userInput) == 3:
                     upload(client, resource, path, userInput[1], userInput[2])
                 else:
-                    print("Missing arguments")
+                    print("Invalid arguments")
             else:
                 print("Invalid command")
 
