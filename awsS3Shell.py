@@ -56,32 +56,34 @@ def checkExists(client, loc):
 
 
 def cd(client, path, newlocation):
-    # get all buckets
-    originalPath = path
-    path = generatePath(client, path, newlocation)
-    if path == "error":
-        return originalPath
+    try:
+        originalPath = path
+        path = generatePath(client, path, newlocation)
+        if path == "error":
+            return originalPath
 
-    if len(path) > 0:
-        my_bucket = client.Bucket(path[0])
-        bucketName = path[0]
-        if len(path) == 1:
-            return bucketName
-        path = '/'.join(path)
-        path = path.replace(bucketName+"/", "", 1)
-        for my_bucket_object in my_bucket.objects.all():
-            if my_bucket_object.key[-1:] == "/":
-                curr = my_bucket_object.key[:-1]
-                isFolder = True
-            else:
-                curr = my_bucket_object.key
-                isFolder = False
-            if path == curr and isFolder:
-                return bucketName + "/" + path
-        print("Invalid Path")
-        return originalPath
-    else:
-        return None
+        if len(path) > 0:
+            my_bucket = client.Bucket(path[0])
+            bucketName = path[0]
+            if len(path) == 1:
+                return bucketName
+            path = '/'.join(path)
+            path = path.replace(bucketName+"/", "", 1)
+            for my_bucket_object in my_bucket.objects.all():
+                if my_bucket_object.key[-1:] == "/":
+                    curr = my_bucket_object.key[:-1]
+                    isFolder = True
+                else:
+                    curr = my_bucket_object.key
+                    isFolder = False
+                if path == curr and isFolder:
+                    return bucketName + "/" + path
+            print("Invalid Path")
+            return originalPath
+        else:
+            return None
+    except Exception as e:
+        print(e)
 
 
 def cp(client, path, originalFile, newFile):
@@ -310,28 +312,44 @@ def upload(client, resource, path, originalFile=None, newFile=None):
         print("Invalid argument")
 
 
-def login():
-    file = open("config.ini", "r")
-    info = file.read().splitlines()
-
-    region = info[1].split(" ")
-    accessKeyId = info[2].split(" ")
-    secretKey = info[3].split(" ")
-    sessionToken = info[4].split(" ")
-
-    resource = boto3.resource(service_name='s3',
-                              region_name=region[2],
-                              aws_access_key_id=accessKeyId[2],
-                              aws_secret_access_key=secretKey[2],
-                              aws_session_token=sessionToken[2]
+def login(user=None):
+    try:
+        file = open("config.ini", "r")
+        info = file.read().splitlines()
+        userFound = False
+        if user:
+            for pos in range(len(info)):
+                if info[pos] and info[pos][0] == "[" and info[pos].replace("[", "").replace("]", "") == user:
+                    userFound = True
+                    accessKeyId = info[pos+1].split("=")
+                    secretKey = info[pos+2].split("=")
+                    region = info[pos+3].split("=")
+                    sessionToken = info[pos+4].split("=")
+                    break
+        else:
+            userFound = True
+            accessKeyId = info[1].split("=")
+            secretKey = info[2].split("=")
+            region = info[3].split("=")
+            sessionToken = info[4].split("=")
+        if userFound == False:
+            print("Invalid user")
+            return
+        resource = boto3.resource(service_name='s3',
+                                  region_name=region[1],
+                                  aws_access_key_id=accessKeyId[1],
+                                  aws_secret_access_key=secretKey[1],
+                                  aws_session_token=sessionToken[1]
+                                  )
+        client = boto3.client(service_name='s3',
+                              region_name=region[1],
+                              aws_access_key_id=accessKeyId[1],
+                              aws_secret_access_key=secretKey[1],
+                              aws_session_token=sessionToken[1]
                               )
-    client = boto3.client(service_name='s3',
-                          region_name=region[2],
-                          aws_access_key_id=accessKeyId[2],
-                          aws_secret_access_key=secretKey[2],
-                          aws_session_token=sessionToken[2]
-                          )
-    return resource, client
+        return resource, client
+    except Exception as e:
+        print(e)
 
 
 def availableCommands():
@@ -369,11 +387,18 @@ def main():
                 availableCommands()
             elif userInput[0] == "login":
                 try:
-                    resource, client = login()
-                    userLoggedIn = True
-                    print("Login Successful")
+                    if len(userInput) == 1:
+                        resource, client = login()
+                        userLoggedIn = True
+                        print("Login Successful")
+                    elif len(userInput) == 2:
+                        resource, client = login(userInput[1])
+                        userLoggedIn = True
+                        print("Login Successful")
+                    else:
+                        print("Invalid arguments")
                 except Exception as e:
-                    print(e)
+                    print("Please check you config file")
             else:
                 print("Please login before executing a command")
         else:
@@ -402,7 +427,21 @@ def main():
                 else:
                     print("Too many arguments")
             elif userInput[0] == "login":
-                login()
+                try:
+                    if len(userInput) == 1:
+                        resource, client = login()
+                        userLoggedIn = True
+                        print("Login Successful")
+                        path = None
+                    elif len(userInput) == 2:
+                        resource, client = login(userInput[1])
+                        userLoggedIn = True
+                        print("Login Successful")
+                        path = None
+                    else:
+                        print("Invalid arguments")
+                except Exception as e:
+                    print("Please check you config file")
             elif userInput[0] == "ls":
                 if len(userInput) == 1:
                     ls(resource, client, path)
