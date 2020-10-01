@@ -1,14 +1,23 @@
 #!usr/bin/python3
+"""
+Name: Kaylee Bigelow
+Date: October 3, 2020
+This program creates a tables on aws with boto3
+"""
 
 import boto3
 import csv
 
 
 def generateTable(file, tableName):
+    """
+    generates a table in aws dynamoDB
+    req: file - csv file to use as data for table
+         tableName - name of table to be generated
+    """
     resource = boto3.resource('dynamodb', 'us-east-1')
-    # read in file
     try:
-        # create table
+        # create tables
         params = {
             'TableName': tableName,
             'KeySchema': [
@@ -24,17 +33,16 @@ def generateTable(file, tableName):
                 'WriteCapacityUnits': 5
             }
         }
-
         table = resource.create_table(**params)
         print("Table is creating...")
         table.wait_until_exists()
         print("Table has been created")
-        # put stuff in table
+        # reads in csv file
         print("Adding information to table...")
         with open(file) as csv_file:
             read = csv.reader(csv_file, delimiter=",")
             for row in read:
-                # print(row[0])
+                # puts rows from file into table
                 table.put_item(
                     Item={
                         'variable#year': row[1]+"#"+row[2],

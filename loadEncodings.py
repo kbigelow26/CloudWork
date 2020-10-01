@@ -1,14 +1,23 @@
 #!usr/bin/python3
+"""
+Name: Kaylee Bigelow
+Date: October 3, 2020
+This program creates a table called encodings on aws with boto3
+"""
 
 import boto3
 import csv
 
 
 def generateTable():
+    """
+    This function generates a table in aws dynamoDB
+    req: encodings.csv to be on the same level as this file
+        ~/.aws/credentials to be set up with aws credentials
+    """
     resource = boto3.resource('dynamodb', 'us-east-1')
-    # read in file
     try:
-        # create table
+        # create table called encodings
         params = {
             'TableName': 'encodings',
             'KeySchema': [
@@ -24,17 +33,17 @@ def generateTable():
                 'WriteCapacityUnits': 5
             }
         }
-
         table = resource.create_table(**params)
         print("Table is creating...")
+        # waits for table to be created so no errors occur in load
         table.wait_until_exists()
         print("Table has been created")
-        # put stuff in table
+        # reads in the csv file
         print("Adding information to table...")
         with open('encodings.csv') as csv_file:
             read = csv.reader(csv_file, delimiter=",")
+            # adds each row of the csv to the table
             for row in read:
-                # print(row[0])
                 table.put_item(
                     Item={
                         'short': row[0],
