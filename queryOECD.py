@@ -55,7 +55,7 @@ def queryTable(commodity):
                 NAInfo = []
                 YearInfo = []
                 for curr in responseNA['Items']:
-                    NAInfo.append(round(float(curr['value']), 3))
+                    NAInfo.append(float(curr['value']))
                     YearInfo.append(curr['year'])
 
                 # queries Canada table and adds values to output table
@@ -63,21 +63,21 @@ def queryTable(commodity):
                 responseCAN = tableCAN.query(KeyConditionExpression=Key('commodity').eq(
                     commodity) & Key('variable#year').begins_with(var['short']))
                 for curr in responseCAN['Items']:
-                    CANInfo.append(round(float(curr['value']), 3))
+                    CANInfo.append(float(curr['value']))
 
                 # queries USA table and adds values to output table
                 USAInfo = []
                 responseUSA = tableUSA.query(KeyConditionExpression=Key('commodity').eq(
                     commodity) & Key('variable#year').begins_with(var['short']))
                 for curr in responseUSA['Items']:
-                    USAInfo.append(round(float(curr['value']), 3))
+                    USAInfo.append(float(curr['value']))
 
                 # queries Mexico table and adds values to output table
                 MEXInfo = []
                 responseMEX = tableMEX.query(KeyConditionExpression=Key('commodity').eq(
                     commodity) & Key('variable#year').begins_with(var['short']))
                 for curr in responseMEX['Items']:
-                    MEXInfo.append(round(float(curr['value']), 3))
+                    MEXInfo.append(float(curr['value']))
 
                 CANUSAInfo = []
                 CANUSAMEXInfo = []
@@ -91,6 +91,7 @@ def queryTable(commodity):
                         round(CANInfo[curr]+USAInfo[curr], 3))
                     CANUSAMEXInfo.append(
                         round(CANInfo[curr]+USAInfo[curr]+MEXInfo[curr], 3))
+                for curr in range(len(NAInfo)):
                     # creates tally for what countries make up northamerica
                     if CANUSAInfo[curr] == NAInfo[curr]:
                         DefInfo.append("CAN+USA")
