@@ -6,6 +6,7 @@ This program acts as a shell for aws buckets
 """
 
 import boto3
+from datetime import datetime
 
 
 def generatePath(client, path, newlocation):
@@ -77,6 +78,8 @@ def cd(client, path, newlocation):
     input: boto3 client, current path, new location
     """
     try:
+        if newlocation == "s3:/":
+            return None
         originalPath = path
         # gets new path
         path = generatePath(client, path, newlocation)
@@ -275,8 +278,11 @@ def ls(resource, client, path, flag=None):
                             print("Invalid arguments")
         else:
             if flag and flag == "-l":
-                # printAllInfo(bucket, my_bucket_object.key)
-                print()
+                response = client.list_buckets()
+                for bucket in response['Buckets']:
+                    time = bucket['CreationDate']
+                    print("s3_bucket\t0\t" +
+                          time.strftime("%Y-%m-%d %H:%M:%S")+"\t"+bucket['Name']+"/")
             elif not flag:
                 for bucket in resource.buckets.all():
                     print("-dir-  "+bucket.name)
