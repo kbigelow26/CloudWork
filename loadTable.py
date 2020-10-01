@@ -12,16 +12,16 @@ def generateTable(file, tableName):
         params = {
             'TableName': tableName,
             'KeySchema': [
-                {'AttributeName': 'commodity#variable', 'KeyType': 'HASH'},
-                {'AttributeName': 'year', 'KeyType': 'RANGE'},
+                {'AttributeName': 'commodity', 'KeyType': 'HASH'},
+                {'AttributeName': 'variable#year', 'KeyType': 'RANGE'},
             ],
             'AttributeDefinitions': [
-                {'AttributeName': 'commodity#variable', 'AttributeType': 'S'},
-                {'AttributeName': 'year', 'AttributeType': 'S'}
+                {'AttributeName': 'commodity', 'AttributeType': 'S'},
+                {'AttributeName': 'variable#year', 'AttributeType': 'S'}
             ],
             'ProvisionedThroughput': {
-                'ReadCapacityUnits': 10,
-                'WriteCapacityUnits': 10
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
             }
         }
 
@@ -30,13 +30,14 @@ def generateTable(file, tableName):
         table.wait_until_exists()
         print("Table has been created")
         # put stuff in table
+        print("Adding information to table...")
         with open(file) as csv_file:
             read = csv.reader(csv_file, delimiter=",")
             for row in read:
                 # print(row[0])
                 table.put_item(
                     Item={
-                        'commodity#variable': row[0]+"#"+row[1],
+                        'variable#year': row[1]+"#"+row[2],
                         'commodity': row[0],
                         'variable': row[1],
                         'year': row[2],
