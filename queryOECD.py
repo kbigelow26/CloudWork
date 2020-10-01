@@ -10,6 +10,18 @@ def queryTable(commodity):
     try:
         encodingTable = resource.Table("encodings")
         response = encodingTable.query(
+            KeyConditionExpression=Key('col').eq('commodity'))
+        validComm = False
+        for comm in response['Items']:
+            if comm['short'] == commodity:
+                validComm = True
+            elif comm['expanded'] == commodity:
+                commodity = comm['short']
+                validComm = True
+        if validComm == False:
+            print("Invalid commodity")
+            return
+        response = encodingTable.query(
             KeyConditionExpression=Key('col').eq('variable'))
         variables = response['Items']
         tableNA = resource.Table("northamerica")
@@ -60,9 +72,9 @@ def queryTable(commodity):
                 NeitherTally = 0
                 for curr in range(len(CANInfo)):
                     CANUSAInfo.append(
-                        round(CANInfo[curr]+USAInfo[curr]))
+                        round(CANInfo[curr]+USAInfo[curr], 3))
                     CANUSAMEXInfo.append(
-                        round(CANInfo[curr]+USAInfo[curr]+MEXInfo[curr]))
+                        round(CANInfo[curr]+USAInfo[curr]+MEXInfo[curr], 3))
                     if CANUSAInfo[curr] == NAInfo[curr]:
                         DefInfo.append("CAN+USA")
                         CANUSATally = CANUSATally + 1
@@ -78,11 +90,15 @@ def queryTable(commodity):
                 # print
                 print("Commodity: "+commodity)
                 print("Variable: "+var['expanded'])
-                print(
-                    "Year\tNorth America\tCanada\tUSA\tMexico\tCAN+USA\tCAN+USA+MEX\tNA Defn")
+                print("{:<15}  {:<15}  {:<15}  {:<15}  {:<15}  {:<15}  {:<15}  {:<15}".format(
+                    "Year", "North America", "Canada", "USA", "Mexico", "CAN+USA", "CAN+USA+MEX", "NA Defn"))
+                # print(
+                #     "Year\t\tNorth America\t\tCanada\t\tUSA\t\tMexico\t\tCAN+USA\t\tCAN+USA+MEX\t\tNA Defn")
                 for curr in range(len(YearInfo)):
-                    print(YearInfo[curr]+"\t"+str(NAInfo[curr])+"\t" +
-                          str(CANInfo[curr])+"\t"+str(USAInfo[curr])+"\t"+str(MEXInfo[curr])+"\t"+str(CANUSAInfo[curr])+"\t"+str(CANUSAMEXInfo[curr])+"\t"+DefInfo[curr])
+                    print("{:<15}  {:<15}  {:<15}  {:<15}  {:<15}  {:<15}  {:<15}  {:<15}".format(YearInfo[curr], str(NAInfo[curr]), str(
+                        CANInfo[curr]), str(USAInfo[curr]), str(MEXInfo[curr]), str(CANUSAInfo[curr]), str(CANUSAMEXInfo[curr]), DefInfo[curr]))
+                    # print(YearInfo[curr]+"\t\t"+str(NAInfo[curr])+"\t\t" +
+                    #       str(CANInfo[curr])+"\t\t"+str(USAInfo[curr])+"\t\t"+str(MEXInfo[curr])+"\t\t"+str(CANUSAInfo[curr])+"\t\t"+str(CANUSAMEXInfo[curr])+"\t\t"+DefInfo[curr])
                 print("North America Definition Results: " + str(CANUSATally) +
                       " CAN+USA, "+str(CANUSAMEXTally)+" CAN+USA+MEX, "+str(NeitherTally)+" Neither")
                 if CANUSATally > CANUSAMEXTally and CANUSATally > NeitherTally:
@@ -113,7 +129,7 @@ def main():
     print("To exit program enter 'exit'")
 
     while(True):
-        print("Please enter the code for the commodity:")
+        print("Please enter the commodity or code for the commodity:")
         userInput = input().split(" ")
         if userInput[0] == "exit":
             print("BYE!")
