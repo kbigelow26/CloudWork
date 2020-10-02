@@ -17,29 +17,31 @@ def generateTable(file, tableName):
     """
     resource = boto3.resource('dynamodb', 'us-east-1')
     try:
+        if file.split(".")[1] != "csv":
+            print("Invalid file type")
+            return
         # create tables
-        params = {
-            'TableName': tableName,
-            'KeySchema': [
+        table = resource.create_table(
+            TableName=tableName,
+            KeySchema=[
                 {'AttributeName': 'commodity', 'KeyType': 'HASH'},
                 {'AttributeName': 'variable#year', 'KeyType': 'RANGE'},
             ],
-            'AttributeDefinitions': [
+            AttributeDefinitions=[
                 {'AttributeName': 'commodity', 'AttributeType': 'S'},
                 {'AttributeName': 'variable#year', 'AttributeType': 'S'}
             ],
-            'ProvisionedThroughput': {
+            ProvisionedThroughput={
                 'ReadCapacityUnits': 5,
                 'WriteCapacityUnits': 5
             }
-        }
-        table = resource.create_table(**params)
+        )
         print("Table is creating...")
         table.wait_until_exists()
         print("Table has been created")
         # reads in csv file
         print("Adding information to table...")
-        with open(file) as csv_file:
+        with open(file, encoding='utf-8-sig') as csv_file:
             read = csv.reader(csv_file, delimiter=",")
             for row in read:
                 # puts rows from file into table
