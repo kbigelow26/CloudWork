@@ -62,22 +62,47 @@ def queryTable(commodity):
                 CANInfo = []
                 responseCAN = tableCAN.query(KeyConditionExpression=Key('commodity').eq(
                     commodity) & Key('variable#year').begins_with(var['short']))
-                for curr in responseCAN['Items']:
-                    CANInfo.append(float(curr['value']))
+                # for curr in responseCAN['Items']:
+                #     CANInfo.append(float(curr['value']))
+                pos = 0
+                for year in YearInfo:
+                    print(responseCAN['Items'][pos]['year'])
+                    if responseCAN['Items'][pos]['year'] == year:
+                        CANInfo.append(
+                            float(responseCAN['Items'][pos]['value']))
+                        pos = pos + 1
+                    else:
+                        CANInfo.append(0)
 
                 # queries USA table and adds values to output table
                 USAInfo = []
                 responseUSA = tableUSA.query(KeyConditionExpression=Key('commodity').eq(
                     commodity) & Key('variable#year').begins_with(var['short']))
-                for curr in responseUSA['Items']:
-                    USAInfo.append(float(curr['value']))
+                # for curr in responseUSA['Items']:
+                #     USAInfo.append(float(curr['value']))
+                pos = 0
+                for year in YearInfo:
+                    if responseUSA['Items'][pos]['year'] == year:
+                        USAInfo.append(
+                            float(responseUSA['Items'][pos]['value']))
+                        pos = pos + 1
+                    else:
+                        CANInfo.append(0)
 
                 # queries Mexico table and adds values to output table
                 MEXInfo = []
                 responseMEX = tableMEX.query(KeyConditionExpression=Key('commodity').eq(
                     commodity) & Key('variable#year').begins_with(var['short']))
-                for curr in responseMEX['Items']:
-                    MEXInfo.append(float(curr['value']))
+                # for curr in responseMEX['Items']:
+                #     MEXInfo.append(float(curr['value']))
+                pos = 0
+                for year in YearInfo:
+                    if responseMEX['Items'][pos]['year'] == year:
+                        MEXInfo.append(
+                            float(responseMEX['Items'][pos]['value']))
+                        pos = pos + 1
+                    else:
+                        CANInfo.append(0)
 
                 CANUSAInfo = []
                 CANUSAMEXInfo = []

@@ -31,10 +31,14 @@ def generatePath(client, path, newlocation):
         # removes / if it is folder
         if newlocation[-1:] == "/":
             newlocation = newlocation[:-1]
+        if newlocation.split("/")[0] == "~":
+            path = []
+            newlocation = newlocation.replace("~", "", 1)
         # loops though given to generate new path
         for loc in newlocation.split("/"):
             if loc == "~":
-                path = []
+                print("Invalid Path")
+                return "error"
             elif loc == "..":
                 if len(path) > 0:
                     path.pop()
@@ -281,7 +285,7 @@ def ls(resource, client, path, flag=None):
                 response = client.list_buckets()
                 for bucket in response['Buckets']:
                     time = bucket['CreationDate']
-                    print("s3_bucket\t0\t" +
+                    print("s3_bucket\t\t" +
                           time.strftime("%Y-%m-%d %H:%M:%S")+"\t"+bucket['Name']+"/")
             elif not flag:
                 for bucket in resource.buckets.all():
@@ -505,7 +509,7 @@ def main():
                         print("Login Successful")
                     else:
                         print("Invalid arguments")
-                except Exception as e:
+                except Exception:
                     print("Please check you config file")
                     exit(1)
             else:
@@ -549,7 +553,7 @@ def main():
                         path = None
                     else:
                         print("Invalid arguments")
-                except Exception as e:
+                except Exception:
                     print("Please check you config file")
             elif userInput[0] == "ls":
                 if len(userInput) == 1:
