@@ -66,7 +66,6 @@ def queryTable(commodity):
                 #     CANInfo.append(float(curr['value']))
                 pos = 0
                 for year in YearInfo:
-                    print(responseCAN['Items'][pos]['year'])
                     if responseCAN['Items'][pos]['year'] == year:
                         CANInfo.append(
                             float(responseCAN['Items'][pos]['value']))
