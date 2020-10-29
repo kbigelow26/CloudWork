@@ -1,8 +1,8 @@
 #!usr/bin/python3
 """
 Name: Kaylee Bigelow
-Date: October 3, 2020
-This program ...
+Date: November 1, 2020
+This program takes template files and uses them to build ec2 instances
 """
 
 import boto3
@@ -12,10 +12,14 @@ from scp import SCPClient
 
 
 def readFiles():
+    """
+    This function reads in the template files and stores them in a usuable format
+    """
     templates = []
     containers = []
     instances = []
     try:
+        # reads and stores template information
         with open('template.csv', encoding='utf-8-sig') as csv_file:
             read = csv.reader(csv_file, delimiter=",")
             for row in read:
@@ -28,6 +32,7 @@ def readFiles():
                 temp['zone'] = row[5]
                 templates.append(temp)
 
+        # reads and stores container information
         with open('container.csv', encoding='utf-8-sig') as csv_file:
             read = csv.reader(csv_file, delimiter=",")
             for row in read:
@@ -38,6 +43,7 @@ def readFiles():
                 temp['script'] = row[3]
                 containers.append(temp)
 
+        # reads and stores instance information
         with open('instances.csv', encoding='utf-8-sig') as csv_file:
             read = csv.reader(csv_file, delimiter=",")
             for row in read:
@@ -54,24 +60,81 @@ def readFiles():
 
 
 def getUserName(toParse):
+    """
+    This function finds the username in a given string
+    req: toParse - the string in which the username exists
+    """
     if len(toParse.split("\"")) > 1:
         return toParse.split("\"")[1]
     else:
         return 'root'
 
 
-def getSystem(toParse):
-    print(toParse.split("\""))
-    if len(toParse.split("\"")) > 1:
-        print("hi")
-        return toParse.split("\"")[1]
-    else:
-        print("unable to determine system")
-        return 'error'
+def connectToSSH(client, ip_address, key):
+    """
+    This function finds the username in a given string
+    req: client - the shh client
+         ip_address - the ip address of the instance
+         key - the key pair used in the instance
+    """
+    # trys to connect as root to get error message
+    client.connect(
+        hostname=ip_address, username="root", pkey=key)
+    stdin, stdout, stderr = client.exec_command(
+        "echo Connected", get_pty=True)
+    userName = getUserName(str(stdout.read()))
+    # connects with correct username
+    client.connect(
+        hostname=ip_address, username=userName, pkey=key)
+    stdin, stdout, stderr = client.exec_command(
+        "echo Connected", get_pty=True)
+    stdin, stdout, stderr = client.exec_command(
+        "cat /etc/os-release", get_pty=True)
+    # gets system info after connection
+    system = getSystem(str(stdout.read()))
+    return system
+
+
+def createDockerImages(client, currContainers, scpClient):
+    """
+    This function finds the username in a given string
+    req: toParse - the string in which the username exists
+    """
+    for curr in currContainers:
+        if curr['script']:
+            # put script
+            scpClient.put(curr['script'], curr['script'])
+            # run script
+            stdin, stdout, stderr = client.exec_command(
+                "chmod +x "+curr['script'], get_pty=True)
+            print(stdout.read())
+            stdin, stdout, stderr = client.exec_command(
+                "sudo ./"+curr['script'], get_pty=True)
+            print(stdout.read())
+            stdin, stdout, stderr = client.exec_command(
+                "sudo docker images", get_pty=True)
+            print(stdout.read())
+            stdin, stdout, stderr = client.exec_command(
+                "sudo docker ps", get_pty=True)
+            print(stdout.read())
+        else:
+            # if no script just pull image
+            stdin, stdout, stderr = client.exec_command(
+                "sudo docker pull "+curr['container'], get_pty=True)
+            print(stdout.read())
+    # verifies images are correctly there
+    stdin, stdout, stderr = client.exec_command(
+        "sudo docker images", get_pty=True)
+    print(stdout.read())
 
 
 def installDocker(client, system):
-    print("here")
+    """
+    This function instals docker based on the system
+    req: client - the ssh client
+         system - the system type
+    """
+    # uses yum to install on linux
     if system == "Amazon Linux" or system == "Linux":
         stdin, stdout, stderr = client.exec_command(
             "sudo yum install docker -y", get_pty=True)
@@ -79,39 +142,44 @@ def installDocker(client, system):
         stdin, stdout, stderr = client.exec_command(
             "sudo service docker start", get_pty=True)
         print(stdout.read())
+    # uses apt to unstall on Ubuntu
     elif system == "Ubuntu":
-        print("1")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
         print(stdout.read())
-        print("2")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
         print(stdout.read())
-        print("3")
         stdin, stdout, stderr = client.exec_command(
             "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
         print(stdout.read())
-        print("4")
         stdin, stdout, stderr = client.exec_command(
             "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
         print(stdout.read())
-        print("5")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
         print(stdout.read())
-        print("6")
         stdin, stdout, stderr = client.exec_command(
             "apt-cache policy docker-ce", get_pty=True)
         print(stdout.read())
-        print("7")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install docker-ce -y", get_pty=True)
         print(stdout.read())
-        print("8")
         stdin, stdout, stderr = client.exec_command(
             "sudo docker version", get_pty=True)
         print(stdout.read())
+
+
+def getSystem(toParse):
+    """
+    This function finds the system in a given string
+    req: toParse - the string in which the system info exists
+    """
+    if len(toParse.split("\"")) > 1:
+        return toParse.split("\"")[1]
+    else:
+        print("unable to determine system")
+        return 'error'
 
 
 def createInstances(templates, containers, instances):
@@ -119,16 +187,15 @@ def createInstances(templates, containers, instances):
         for data in instances:
             currTemplate = {}
             currContainers = []
+            # gets info to use in instance creation
             for find in templates:
                 if find['templateName'] == data['templateName']:
                     currTemplate = find
             for find in containers:
                 if find['containerName'] == data['containerName']:
                     currContainers.append(find)
-            print("")
-            print("instance = " + str(data))
-            print("template = " + str(currTemplate))
-            print("container = " + str(currContainers))
+
+            # creates the instance
             ec2 = boto3.resource('ec2', currTemplate['zone'])
             if(isinstance(currTemplate, int)):
                 instances = ec2.create_instances(
@@ -175,61 +242,28 @@ def createInstances(templates, containers, instances):
                             ]
                         }]
                 )
-            print("id = " + str(instances[0].id))
-            print(instances)
-            instances[0].wait_until_running()
-            current_instance = list(ec2.instances.filter(
-                InstanceIds=[str(instances[0].id]))
-            ip_address=current_instance[0].public_ip_address
-            print("ip = " + str(ip_address))
-            print(str(current_instance[0].platform))
-            key=paramiko.RSAKey.from_private_key_file(data['sshKey'])
-            client=paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(
-                hostname=ip_address, username="root", pkey=key)
-            stdin, stdout, stderr=client.exec_command(
-                "echo Connected", get_pty=True)
-            userName=getUserName(str(stdout.read()))
 
-            print(userName)
-            client.connect(
-                hostname=ip_address, username=userName, pkey=key)
-            stdin, stdout, stderr=client.exec_command(
-                "echo Connected", get_pty=True)
-            print(stdout.read())
-            stdin, stdout, stderr=client.exec_command(
-                "cat /etc/os-release", get_pty=True)
-            system=getSystem(str(stdout.read()))
+            # verifies instance is running before doing commands
+            instances[0].wait_until_running()
+
+            # creates info required to connect for ssh
+            current_instance = list(ec2.instances.filter(
+                InstanceIds=[str(instances[0].id)]))
+            ip_address = current_instance[0].public_ip_address
+            key = paramiko.RSAKey.from_private_key_file(data['sshKey'])
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+            # Connect for ssh
+            system = connectToSSH(client, ip_address, key)
+
+            # install docker on the system
             installDocker(client, system)
 
-            scpClient=SCPClient(client.get_transport())
-            for curr in currContainers:
+            # create docker images
+            scpClient = SCPClient(client.get_transport())
+            createDockerImages(client, currContainers, scpClient)
 
-                if curr['script']:
-                    # put script
-                    scpClient.put(curr['script'], curr['script'])
-                # run script
-
-                    stdin, stdout, stderr=client.exec_command(
-                        "chmod +x "+curr['script'], get_pty=True)
-                    print(stdout.read())
-                    stdin, stdout, stderr=client.exec_command(
-                        "sudo ./"+curr['script'], get_pty=True)
-                    print(stdout.read())
-                    stdin, stdout, stderr=client.exec_command(
-                        "sudo docker images", get_pty=True)
-                    print(stdout.read())
-                    stdin, stdout, stderr=client.exec_command(
-                        "sudo docker ps", get_pty=True)
-                    print(stdout.read())
-                else:
-                    stdin, stdout, stderr=client.exec_command(
-                        "sudo docker pull "+curr['container'], get_pty=True)
-                    print(stdout.read())
-            stdin, stdout, stderr=client.exec_command(
-                "sudo docker images", get_pty=True)
-            system=getSystem(str(stdout.read()))
             client.close()
 
     except Exception as e:
@@ -237,7 +271,7 @@ def createInstances(templates, containers, instances):
 
 
 def main():
-    templates, containers, instances=readFiles()
+    templates, containers, instances = readFiles()
     createInstances(templates, containers, instances)
 
 
