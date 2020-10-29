@@ -80,29 +80,37 @@ def installDocker(client, system):
             "sudo service docker start", get_pty=True)
         print(stdout.read())
     elif system == "Ubuntu":
+        print("1")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
         print(stdout.read())
+        print("2")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
         print(stdout.read())
+        print("3")
         stdin, stdout, stderr = client.exec_command(
             "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
         print(stdout.read())
+        print("4")
         stdin, stdout, stderr = client.exec_command(
             "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
         print(stdout.read())
+        print("5")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
         print(stdout.read())
+        print("6")
         stdin, stdout, stderr = client.exec_command(
-            "apt-cache policy docker-ce -y", get_pty=True)
+            "apt-cache policy docker-ce", get_pty=True)
         print(stdout.read())
+        print("7")
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install docker-ce -y", get_pty=True)
         print(stdout.read())
+        print("8")
         stdin, stdout, stderr = client.exec_command(
-            "sudo systemctl status docker", get_pty=True)
+            "sudo docker version", get_pty=True)
         print(stdout.read())
 
 
@@ -122,103 +130,106 @@ def createInstances(templates, containers, instances):
             print("template = " + str(currTemplate))
             print("container = " + str(currContainers))
             ec2 = boto3.resource('ec2', currTemplate['zone'])
-            # if(isinstance(currTemplate, int)):
-            #     instances = ec2.create_instances(
-            #         ImageId=currTemplate['ami'],
-            #         MinCount=1,
-            #         MaxCount=1,
-            #         InstanceType=currTemplate['instanceType'],
-            #         KeyName=data['sshKey'].split(".")[0],
-            #         SecurityGroups=currTemplate['securityGroup'],
-            #         TagSpecifications=[
-            #             {
-            #                 'ResourceType': 'instance',
-            #                 'Tags': [
-            #                     {
-            #                         'Key': 'Name',
-            #                         'Value': data['instanceName']
-            #                     },
-            #                 ]
-            #             }],
-            #         BlockDeviceMappings=[
-            #             {
-            #                 'DeviceName': '/dev/xvda',
-            #                 'Ebs': {
-            #                     'VolumeSize': int(currTemplate['size'])
-            #                 }
-            #             }]
-            #     )
-            # else:
-            #     instances = ec2.create_instances(
-            #         ImageId=currTemplate['ami'],
-            #         MinCount=1,
-            #         MaxCount=1,
-            #         InstanceType=currTemplate['instanceType'],
-            #         KeyName=data['sshKey'].split(".")[0],
-            #         SecurityGroups=currTemplate['securityGroup'],
-            #         TagSpecifications=[
-            #             {
-            #                 'ResourceType': 'instance',
-            #                 'Tags': [
-            #                     {
-            #                         'Key': 'Name',
-            #                         'Value': data['instanceName']
-            #                     },
-            #                 ]
-            #             }]
-            #     )
-            # print("id = " + str(instances[0].id))
-            # print(instances)
-            # instances[0].wait_until_running()
+            if(isinstance(currTemplate, int)):
+                instances = ec2.create_instances(
+                    ImageId=currTemplate['ami'],
+                    MinCount=1,
+                    MaxCount=1,
+                    InstanceType=currTemplate['instanceType'],
+                    KeyName=data['sshKey'].split(".")[0],
+                    SecurityGroups=currTemplate['securityGroup'],
+                    TagSpecifications=[
+                        {
+                            'ResourceType': 'instance',
+                            'Tags': [
+                                {
+                                    'Key': 'Name',
+                                    'Value': data['instanceName']
+                                },
+                            ]
+                        }],
+                    BlockDeviceMappings=[
+                        {
+                            'DeviceName': '/dev/xvda',
+                            'Ebs': {
+                                'VolumeSize': int(currTemplate['size'])
+                            }
+                        }]
+                )
+            else:
+                instances = ec2.create_instances(
+                    ImageId=currTemplate['ami'],
+                    MinCount=1,
+                    MaxCount=1,
+                    InstanceType=currTemplate['instanceType'],
+                    KeyName=data['sshKey'].split(".")[0],
+                    SecurityGroups=currTemplate['securityGroup'],
+                    TagSpecifications=[
+                        {
+                            'ResourceType': 'instance',
+                            'Tags': [
+                                {
+                                    'Key': 'Name',
+                                    'Value': data['instanceName']
+                                },
+                            ]
+                        }]
+                )
+            print("id = " + str(instances[0].id))
+            print(instances)
+            instances[0].wait_until_running()
             current_instance = list(ec2.instances.filter(
-                InstanceIds=["i-038d410d47bc28024"]))
-            ip_address = current_instance[0].public_ip_address
+                InstanceIds=[str(instances[0].id]))
+            ip_address=current_instance[0].public_ip_address
             print("ip = " + str(ip_address))
             print(str(current_instance[0].platform))
-            key = paramiko.RSAKey.from_private_key_file(data['sshKey'])
-            client = paramiko.SSHClient()
+            key=paramiko.RSAKey.from_private_key_file(data['sshKey'])
+            client=paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             client.connect(
                 hostname=ip_address, username="root", pkey=key)
-            stdin, stdout, stderr = client.exec_command(
+            stdin, stdout, stderr=client.exec_command(
                 "echo Connected", get_pty=True)
-            userName = getUserName(str(stdout.read()))
+            userName=getUserName(str(stdout.read()))
 
             print(userName)
             client.connect(
                 hostname=ip_address, username=userName, pkey=key)
-            stdin, stdout, stderr = client.exec_command(
+            stdin, stdout, stderr=client.exec_command(
                 "echo Connected", get_pty=True)
             print(stdout.read())
-            stdin, stdout, stderr = client.exec_command(
+            stdin, stdout, stderr=client.exec_command(
                 "cat /etc/os-release", get_pty=True)
-            system = getSystem(str(stdout.read()))
+            system=getSystem(str(stdout.read()))
             installDocker(client, system)
 
-            # scpClient = SCPClient(client.get_transport())
-            # for curr in currContainers:
+            scpClient=SCPClient(client.get_transport())
+            for curr in currContainers:
 
-            #     if curr['script']:
-            #         # put script
-            #         scpClient.put(curr['script'], curr['script'])
-            #     # run script
+                if curr['script']:
+                    # put script
+                    scpClient.put(curr['script'], curr['script'])
+                # run script
 
-            #         stdin, stdout, stderr = client.exec_command(
-            #             "chmod +x "+curr['script'], get_pty=True)
-            #         print(stdout.read())
-            #         stdin, stdout, stderr = client.exec_command(
-            #             "sudo ./"+curr['script'], get_pty=True)
-            #         print(stdout.read())
-            #         stdin, stdout, stderr = client.exec_command(
-            #             "sudo docker images", get_pty=True)
-            #         print(stdout.read())
-            #         stdin, stdout, stderr = client.exec_command(
-            #             "sudo docker ps", get_pty=True)
-            #         print(stdout.read())
-            #     else:
-            #         stdin, stdout, stderr = client.exec_command(
-            #             "sudo docker pull "+curr['container'], get_pty=True)
-            #         print(stdout.read())
+                    stdin, stdout, stderr=client.exec_command(
+                        "chmod +x "+curr['script'], get_pty=True)
+                    print(stdout.read())
+                    stdin, stdout, stderr=client.exec_command(
+                        "sudo ./"+curr['script'], get_pty=True)
+                    print(stdout.read())
+                    stdin, stdout, stderr=client.exec_command(
+                        "sudo docker images", get_pty=True)
+                    print(stdout.read())
+                    stdin, stdout, stderr=client.exec_command(
+                        "sudo docker ps", get_pty=True)
+                    print(stdout.read())
+                else:
+                    stdin, stdout, stderr=client.exec_command(
+                        "sudo docker pull "+curr['container'], get_pty=True)
+                    print(stdout.read())
+            stdin, stdout, stderr=client.exec_command(
+                "sudo docker images", get_pty=True)
+            system=getSystem(str(stdout.read()))
             client.close()
 
     except Exception as e:
@@ -226,7 +237,7 @@ def createInstances(templates, containers, instances):
 
 
 def main():
-    templates, containers, instances = readFiles()
+    templates, containers, instances=readFiles()
     createInstances(templates, containers, instances)
 
 
