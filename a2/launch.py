@@ -8,6 +8,7 @@ This program takes template files and uses them to build ec2 instances
 import boto3
 import csv
 import paramiko
+import time
 from scp import SCPClient
 
 
@@ -19,6 +20,7 @@ def readFiles():
     containers = []
     instances = []
     try:
+        print("Reading in files...")
         # reads and stores template information
         with open('template.csv', encoding='utf-8-sig') as csv_file:
             read = csv.reader(csv_file, delimiter=",")
@@ -107,21 +109,21 @@ def createDockerImages(client, currContainers, scpClient):
             # run script
             stdin, stdout, stderr = client.exec_command(
                 "chmod +x "+curr['script'], get_pty=True)
-            print(stdout.read())
+            # print(stdout.read())
             stdin, stdout, stderr = client.exec_command(
                 "sudo ./"+curr['script'], get_pty=True)
-            print(stdout.read())
+            # print(stdout.read())
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker images", get_pty=True)
-            print(stdout.read())
+            # print(stdout.read())
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker ps", get_pty=True)
-            print(stdout.read())
+            # print(stdout.read())
         else:
             # if no script just pull image
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker pull "+curr['container'], get_pty=True)
-            print(stdout.read())
+            # print(stdout.read())
     # verifies images are correctly there
     stdin, stdout, stderr = client.exec_command(
         "sudo docker images", get_pty=True)
@@ -138,36 +140,36 @@ def installDocker(client, system):
     if system == "Amazon Linux" or system == "Linux":
         stdin, stdout, stderr = client.exec_command(
             "sudo yum install docker -y", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo service docker start", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
     # uses apt to unstall on Ubuntu
     elif system == "Ubuntu":
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "apt-cache policy docker-ce", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install docker-ce -y", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo docker version", get_pty=True)
-        print(stdout.read())
+        # print(stdout.read())
 
 
 def getSystem(toParse):
@@ -196,6 +198,7 @@ def createInstances(templates, containers, instances):
                     currContainers.append(find)
 
             # creates the instance
+            print("Creating instance...")
             ec2 = boto3.resource('ec2', currTemplate['zone'])
             if(isinstance(currTemplate, int)):
                 instances = ec2.create_instances(
@@ -244,7 +247,9 @@ def createInstances(templates, containers, instances):
                 )
 
             # verifies instance is running before doing commands
+            print("Waiting for instance to be running...")
             instances[0].wait_until_running()
+            time.sleep(15)
 
             # creates info required to connect for ssh
             current_instance = list(ec2.instances.filter(
@@ -258,9 +263,11 @@ def createInstances(templates, containers, instances):
             system = connectToSSH(client, ip_address, key)
 
             # install docker on the system
+            print("Installing docker...")
             installDocker(client, system)
 
             # create docker images
+            print("Creating images...")
             scpClient = SCPClient(client.get_transport())
             createDockerImages(client, currContainers, scpClient)
 
