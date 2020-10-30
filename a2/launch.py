@@ -109,21 +109,21 @@ def createDockerImages(client, currContainers, scpClient):
             # run script
             stdin, stdout, stderr = client.exec_command(
                 "chmod +x "+curr['script'], get_pty=True)
-            # print(stdout.read())
+            print(stdout.read())
             stdin, stdout, stderr = client.exec_command(
                 "sudo ./"+curr['script'], get_pty=True)
-            # print(stdout.read())
+            print(stdout.read())
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker images", get_pty=True)
-            # print(stdout.read())
+            print(stdout.read())
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker ps", get_pty=True)
-            # print(stdout.read())
+            print(stdout.read())
         else:
             # if no script just pull image
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker pull "+curr['container'], get_pty=True)
-            # print(stdout.read())
+            print(stdout.read())
     # verifies images are correctly there
     stdin, stdout, stderr = client.exec_command(
         "sudo docker images", get_pty=True)
@@ -140,36 +140,36 @@ def installDocker(client, system):
     if system == "Amazon Linux" or system == "Linux":
         stdin, stdout, stderr = client.exec_command(
             "sudo yum install docker -y", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo service docker start", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
     # uses apt to unstall on Ubuntu
     elif system == "Ubuntu":
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "apt-cache policy docker-ce", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install docker-ce -y", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
         stdin, stdout, stderr = client.exec_command(
             "sudo docker version", get_pty=True)
-        # print(stdout.read())
+        print(stdout.read())
 
 
 def getSystem(toParse):
