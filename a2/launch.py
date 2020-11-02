@@ -10,6 +10,7 @@ import csv
 import paramiko
 import time
 from scp import SCPClient
+import os
 
 
 def readFiles():
@@ -58,7 +59,8 @@ def readFiles():
 
         return templates, containers, instances
     except Exception as e:
-        print(e)
+        print('Unable to load in config files')
+        return "error", "error", "error"
 
 
 def getUserName(toParse):
@@ -97,6 +99,21 @@ def connectToSSH(client, ip_address, key):
     return system
 
 
+def formatConsoleLogs(toFormat):
+    """
+    This function formats output from the instance
+    req: toParse - the string to format
+    """
+    outputArray = toFormat.split('\\r\\n')
+    for x in outputArray:
+        try:
+            outputArray2 = x.split('\\r')
+            for y in outputArray2:
+                print(y)
+        except:
+            print(x)
+
+
 def createDockerImages(client, currContainers, scpClient):
     """
     This function finds the username in a given string
@@ -109,25 +126,38 @@ def createDockerImages(client, currContainers, scpClient):
             # run script
             stdin, stdout, stderr = client.exec_command(
                 "chmod +x "+curr['script'], get_pty=True)
-            print(stdout.read())
+            formatConsoleLogs(str(stdout.read()))
             stdin, stdout, stderr = client.exec_command(
                 "sudo ./"+curr['script'], get_pty=True)
-            print(stdout.read())
+            formatConsoleLogs(str(stdout.read()))
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker images", get_pty=True)
-            print(stdout.read())
+            formatConsoleLogs(str(stdout.read()))
             stdin, stdout, stderr = client.exec_command(
                 "sudo docker ps", get_pty=True)
-            print(stdout.read())
+            formatConsoleLogs(str(stdout.read()))
         else:
-            # if no script just pull image
-            stdin, stdout, stderr = client.exec_command(
-                "sudo docker pull "+curr['container'], get_pty=True)
-            print(stdout.read())
+            if curr['location'] == 'Local system':
+                os.system(
+                    "docker save -o " + curr['container'] + "Image.tar " + curr['container'] + ":latest")
+                scpClient.put(curr['container']+"Image.tar",
+                              curr['container']+"Image.tar")
+                # run script
+                stdin, stdout, stderr = client.exec_command(
+                    "chmod +x "+curr['container']+"Image.tar", get_pty=True)
+                formatConsoleLogs(str(stdout.read()))
+                stdin, stdout, stderr = client.exec_command(
+                    "sudo docker load -i " + curr['container'] + "Image.tar ", get_pty=True)
+                formatConsoleLogs(str(stdout.read()))
+            else:
+                # if no script just pull image
+                stdin, stdout, stderr = client.exec_command(
+                    "sudo docker pull "+curr['container'], get_pty=True)
+                formatConsoleLogs(str(stdout.read()))
     # verifies images are correctly there
     stdin, stdout, stderr = client.exec_command(
         "sudo docker images", get_pty=True)
-    print(stdout.read())
+    formatConsoleLogs(str(stdout.read()))
 
 
 def installDocker(client, system):
@@ -140,36 +170,36 @@ def installDocker(client, system):
     if system == "Amazon Linux" or system == "Linux":
         stdin, stdout, stderr = client.exec_command(
             "sudo yum install docker -y", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "sudo service docker start", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
     # uses apt to unstall on Ubuntu
     elif system == "Ubuntu":
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "sudo apt update -y", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "apt-cache policy docker-ce", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "sudo apt install docker-ce -y", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
         stdin, stdout, stderr = client.exec_command(
             "sudo docker version", get_pty=True)
-        print(stdout.read())
+        formatConsoleLogs(str(stdout.read()))
 
 
 def getSystem(toParse):
@@ -182,6 +212,14 @@ def getSystem(toParse):
     else:
         print("unable to determine system")
         return 'error'
+
+
+def isInt(i):
+    try:
+        int(i)
+        return True
+    except ValueError:
+        return False
 
 
 def createInstances(templates, containers, instances):
@@ -200,7 +238,7 @@ def createInstances(templates, containers, instances):
             # creates the instance
             print("Creating instance...")
             ec2 = boto3.resource('ec2', currTemplate['zone'])
-            if(isinstance(currTemplate, int)):
+            if(isInt(currTemplate['size'])):
                 instances = ec2.create_instances(
                     ImageId=currTemplate['ami'],
                     MinCount=1,
@@ -279,7 +317,8 @@ def createInstances(templates, containers, instances):
 
 def main():
     templates, containers, instances = readFiles()
-    createInstances(templates, containers, instances)
+    if(templates != "error"):
+        createInstances(templates, containers, instances)
 
 
 if __name__ == "__main__":

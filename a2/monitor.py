@@ -74,18 +74,26 @@ def main():
     i = 0
 
     print("External Instance Information")
-    print("{:<10}  {:<10}  {:<20}  {:<20}  {:<20}  {:<15}  {:<10}   {:<15}  {:<20}  {:<15}".format(
-        "Name", "State", "Instance Id", "Availablity Zone", "Image Id", " Instance Type", " Key Name", " PublicIP", " Security Groups", " Root Device Name"))
+    print("{:<10}  {:<10}  {:<20}  {:<20}  {:<20}  {:<15}  {:<10}  {:<10}   {:<15}  {:<20}  {:<15}".format(
+        "Name", "State", "Instance Id", "Availablity Zone", "Image Id", " Instance Type", "Volume Size", "Key Name", "PublicIP", "Security Groups", "Root Device Name"))
     for info in client.describe_instances()['Reservations']:
         if info['Instances'][0]['State']:
-            curr = info['Instances'][0]
-            instanceIds.append(curr['InstanceId'])
-            keyNames.append(curr['KeyName'])
-            print("{:<10}  {:<10}  {:<20}  {:<20}  {:<20}  {:<15}  {:<10}   {:<15}  {:<20}  {:<15}".format(
-                curr['Tags'][0]['Value'], curr['State']['Name'], curr['InstanceId'], curr['Placement']['AvailabilityZone'], curr['ImageId'], curr['InstanceType'], curr['KeyName'], curr['PublicIpAddress'], curr['SecurityGroups'][0]['GroupName'], curr['RootDeviceName']))
+            if info['Instances'][0]['State']['Name'] != 'terminated':
+                curr = info['Instances'][0]
+                instanceIds.append(curr['InstanceId'])
+                keyNames.append(curr['KeyName'])
+
+                instance = ec2.Instance(curr['InstanceId'])
+                volumes = instance.volumes.all()
+                volumeSize = 'default'
+                for volume in volumes:
+                    volumeSize = volume.size
+
+                print("{:<10}  {:<10}  {:<20}  {:<20}  {:<20}  {:<15}  {:<10}  {:<10}   {:<15}  {:<20}  {:<15}".format(
+                    curr['Tags'][0]['Value'], curr['State']['Name'], curr['InstanceId'], curr['Placement']['AvailabilityZone'], curr['ImageId'], curr['InstanceType'], volumeSize, curr['KeyName'], curr['PublicIpAddress'], curr['SecurityGroups'][0]['GroupName'], curr['RootDeviceName']))
 
     print("\nInternal Instance Information")
-    print("{:<20}  {:<10}  {:<15}".format(
+    print("{:<20}  {:<15}  {:<15}".format(
         "Instance Id", "System", "Docker Containers"))
     for instance in instanceIds:
         current_instance = list(ec2.instances.filter(
@@ -99,7 +107,7 @@ def main():
         stdin, stdout, stderr = client.exec_command(
             "sudo docker images", get_pty=True)
         images = getImages(str(stdout.read()))
-        print("{:<20}  {:<10}  {:<15}".format(
+        print("{:<20}  {:<15}  {:<15}".format(
             instance, system, str(images)))
 
 
