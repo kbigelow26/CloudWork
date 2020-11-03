@@ -68,10 +68,13 @@ def getUserName(toParse):
     This function finds the username in a given string
     req: toParse - the string in which the username exists
     """
-    if len(toParse.split("\"")) > 1:
-        return toParse.split("\"")[1]
-    else:
-        return 'root'
+    try:
+        if len(toParse.split("\"")) > 1:
+            return toParse.split("\"")[1]
+        else:
+            return 'root'
+    except Exception as e:
+        print(e)
 
 
 def connectToSSH(client, ip_address, key):
@@ -81,22 +84,25 @@ def connectToSSH(client, ip_address, key):
          ip_address - the ip address of the instance
          key - the key pair used in the instance
     """
-    # trys to connect as root to get error message
-    client.connect(
-        hostname=ip_address, username="root", pkey=key)
-    stdin, stdout, stderr = client.exec_command(
-        "echo Connected", get_pty=True)
-    userName = getUserName(str(stdout.read()))
-    # connects with correct username
-    client.connect(
-        hostname=ip_address, username=userName, pkey=key)
-    stdin, stdout, stderr = client.exec_command(
-        "echo Connected", get_pty=True)
-    stdin, stdout, stderr = client.exec_command(
-        "cat /etc/os-release", get_pty=True)
-    # gets system info after connection
-    system = getSystem(str(stdout.read()))
-    return system
+    try:
+        # trys to connect as root to get error message
+        client.connect(
+            hostname=ip_address, username="root", pkey=key)
+        stdin, stdout, stderr = client.exec_command(
+            "echo Connected", get_pty=True)
+        userName = getUserName(str(stdout.read()))
+        # connects with correct username
+        client.connect(
+            hostname=ip_address, username=userName, pkey=key)
+        stdin, stdout, stderr = client.exec_command(
+            "echo Connected", get_pty=True)
+        stdin, stdout, stderr = client.exec_command(
+            "cat /etc/os-release", get_pty=True)
+        # gets system info after connection
+        system = getSystem(str(stdout.read()))
+        return system
+    except Exception as e:
+        print(e)
 
 
 def formatConsoleLogs(toFormat):
@@ -104,14 +110,17 @@ def formatConsoleLogs(toFormat):
     This function formats output from the instance
     req: toParse - the string to format
     """
-    outputArray = toFormat.split('\\r\\n')
-    for x in outputArray:
-        try:
-            outputArray2 = x.split('\\r')
-            for y in outputArray2:
-                print(y)
-        except:
-            print(x)
+    try:
+        outputArray = toFormat.split('\\r\\n')
+        for x in outputArray:
+            try:
+                outputArray2 = x.split('\\r')
+                for y in outputArray2:
+                    print(y)
+            except:
+                print(x)
+    except Exception as e:
+        print(e)
 
 
 def createDockerImages(client, currContainers, scpClient):
@@ -119,45 +128,48 @@ def createDockerImages(client, currContainers, scpClient):
     This function finds the username in a given string
     req: toParse - the string in which the username exists
     """
-    for curr in currContainers:
-        if curr['script']:
-            # put script
-            scpClient.put(curr['script'], curr['script'])
-            # run script
-            stdin, stdout, stderr = client.exec_command(
-                "chmod +x "+curr['script'], get_pty=True)
-            formatConsoleLogs(str(stdout.read()))
-            stdin, stdout, stderr = client.exec_command(
-                "sudo ./"+curr['script'], get_pty=True)
-            formatConsoleLogs(str(stdout.read()))
-            stdin, stdout, stderr = client.exec_command(
-                "sudo docker images", get_pty=True)
-            formatConsoleLogs(str(stdout.read()))
-            stdin, stdout, stderr = client.exec_command(
-                "sudo docker ps", get_pty=True)
-            formatConsoleLogs(str(stdout.read()))
-        else:
-            if curr['location'] == 'Local system':
-                os.system(
-                    "docker save -o " + curr['container'] + "Image.tar " + curr['container'] + ":latest")
-                scpClient.put(curr['container']+"Image.tar",
-                              curr['container']+"Image.tar")
+    try:
+        for curr in currContainers:
+            if curr['script']:
+                # put script
+                scpClient.put(curr['script'], curr['script'])
                 # run script
                 stdin, stdout, stderr = client.exec_command(
-                    "chmod +x "+curr['container']+"Image.tar", get_pty=True)
+                    "chmod +x "+curr['script'], get_pty=True)
                 formatConsoleLogs(str(stdout.read()))
                 stdin, stdout, stderr = client.exec_command(
-                    "sudo docker load -i " + curr['container'] + "Image.tar ", get_pty=True)
+                    "sudo ./"+curr['script'], get_pty=True)
+                formatConsoleLogs(str(stdout.read()))
+                stdin, stdout, stderr = client.exec_command(
+                    "sudo docker images", get_pty=True)
+                formatConsoleLogs(str(stdout.read()))
+                stdin, stdout, stderr = client.exec_command(
+                    "sudo docker ps", get_pty=True)
                 formatConsoleLogs(str(stdout.read()))
             else:
-                # if no script just pull image
-                stdin, stdout, stderr = client.exec_command(
-                    "sudo docker pull "+curr['container'], get_pty=True)
-                formatConsoleLogs(str(stdout.read()))
-    # verifies images are correctly there
-    stdin, stdout, stderr = client.exec_command(
-        "sudo docker images", get_pty=True)
-    formatConsoleLogs(str(stdout.read()))
+                if curr['location'] == 'Local system':
+                    os.system(
+                        "docker save -o " + curr['container'] + "Image.tar " + curr['container'] + ":latest")
+                    scpClient.put(curr['container']+"Image.tar",
+                                  curr['container']+"Image.tar")
+                    # run script
+                    stdin, stdout, stderr = client.exec_command(
+                        "chmod +x "+curr['container']+"Image.tar", get_pty=True)
+                    formatConsoleLogs(str(stdout.read()))
+                    stdin, stdout, stderr = client.exec_command(
+                        "sudo docker load -i " + curr['container'] + "Image.tar ", get_pty=True)
+                    formatConsoleLogs(str(stdout.read()))
+                else:
+                    # if no script just pull image
+                    stdin, stdout, stderr = client.exec_command(
+                        "sudo docker pull "+curr['container'], get_pty=True)
+                    formatConsoleLogs(str(stdout.read()))
+        # verifies images are correctly there
+        stdin, stdout, stderr = client.exec_command(
+            "sudo docker images", get_pty=True)
+        formatConsoleLogs(str(stdout.read()))
+    except Exception as e:
+        print(e)
 
 
 def installDocker(client, system):
@@ -166,40 +178,43 @@ def installDocker(client, system):
     req: client - the ssh client
          system - the system type
     """
-    # uses yum to install on linux
-    if system == "Amazon Linux" or system == "Linux":
-        stdin, stdout, stderr = client.exec_command(
-            "sudo yum install docker -y", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "sudo service docker start", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-    # uses apt to unstall on Ubuntu
-    elif system == "Ubuntu":
-        stdin, stdout, stderr = client.exec_command(
-            "sudo apt update -y", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "sudo apt update -y", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "apt-cache policy docker-ce", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "sudo apt install docker-ce -y", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
-        stdin, stdout, stderr = client.exec_command(
-            "sudo docker version", get_pty=True)
-        formatConsoleLogs(str(stdout.read()))
+    try:
+        # uses yum to install on linux
+        if system == "Amazon Linux" or system == "Linux":
+            stdin, stdout, stderr = client.exec_command(
+                "sudo yum install docker -y", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "sudo service docker start", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+        # uses apt to unstall on Ubuntu
+        elif system == "Ubuntu":
+            stdin, stdout, stderr = client.exec_command(
+                "sudo apt update -y", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "sudo apt install apt-transport-https ca-certificates curl software-properties-common -y", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable\"", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "sudo apt update -y", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "apt-cache policy docker-ce", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "sudo apt install docker-ce -y", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+            stdin, stdout, stderr = client.exec_command(
+                "sudo docker version", get_pty=True)
+            formatConsoleLogs(str(stdout.read()))
+    except Exception as e:
+        print(e)
 
 
 def getSystem(toParse):
@@ -207,14 +222,21 @@ def getSystem(toParse):
     This function finds the system in a given string
     req: toParse - the string in which the system info exists
     """
-    if len(toParse.split("\"")) > 1:
-        return toParse.split("\"")[1]
-    else:
-        print("unable to determine system")
-        return 'error'
+    try:
+        if len(toParse.split("\"")) > 1:
+            return toParse.split("\"")[1]
+        else:
+            print("unable to determine system")
+            return 'error'
+    except Exception as e:
+        print(e)
 
 
 def isInt(i):
+    """
+    This function checks if a string is an int
+    req: string to check
+    """
     try:
         int(i)
         return True
@@ -223,6 +245,12 @@ def isInt(i):
 
 
 def createInstances(templates, containers, instances):
+    """
+    This function creates AWS ec2 instances
+    req: templates - list of all templates
+         containers - list of all containers
+         instances - list of all instances
+    """
     try:
         for data in instances:
             currTemplate = {}
