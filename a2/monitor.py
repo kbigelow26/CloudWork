@@ -16,7 +16,9 @@ def getSystem(toParse):
     req: toParse - the string in which the system info exists
     """
     if len(toParse.split("\"")) > 1:
-        return toParse.split("\"")[1]
+        systemInfo = toParse.split("\"")
+        system = systemInfo[1]+" "+systemInfo[3].split(" ")[0]
+        return system
     else:
         print("unable to determine system")
         return 'error'

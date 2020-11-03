@@ -68,8 +68,10 @@ Part 2: DynamoDB
 		- "Invalid input.\nExample input: WT\nOr enter 'exit' to exit": is returned if the user enters nothing, just spaces, or an input that is greater than 1 word
 		- "Invalid commodity": returned if the user enters a commodity that is not in the encodings table
 		- "Invalid file type": returned if file is not .csv
+		- If a year is missing from any table then 0 will be inputed and used for calculations
 		- Any except returned by boto3 will be printed out to the user and the program will continue
 	
 	Comments/Instructions
 		- loadEncodings.py must be run before you can query the DynamoDB (to run see "Encoding.csv" under "loadTable.py Program")
 		- to exit loadTable.py or queryOECD.py programs enter 'exit' as listed at the start of the programs
+		- the table displays the values the same way as they are displayed in the database

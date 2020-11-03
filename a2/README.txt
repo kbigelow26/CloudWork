@@ -42,7 +42,7 @@ launch.py
         4) The docker containers must exist in the specified locations
         5) The user must have their aws credentials saved in .aws/credentials on their system
     How to Run:
-        >
+        > python3 launch.py
     Bonus:
         - in the container.csv file the user can specify 'Local system' 
             in which case the program will find the docker image on the
@@ -54,7 +54,7 @@ launch.py
 
 monitor.py
     How to Run:
-        >
+        > python3 monitor.py
     Information displayed:
         - Instance Name
         - Instance State
