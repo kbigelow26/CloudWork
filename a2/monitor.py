@@ -104,9 +104,10 @@ def main():
 
                     instance = ec2.Instance(curr['InstanceId'])
                     volumes = instance.volumes.all()
-                    volumeSize = 'default'
+                    volumeSize = '8'
                     for volume in volumes:
-                        volumeSize = volume.size
+                        if(volume.size != 8):
+                            volumeSize = volume.size
 
                     print("{:<10}  {:<10}  {:<20}  {:<20}  {:<20}  {:<15}  {:<10}  {:<10}   {:<15}  {:<20}  {:<15}".format(
                         curr['Tags'][0]['Value'], curr['State']['Name'], curr['InstanceId'], curr['Placement']['AvailabilityZone'], curr['ImageId'], curr['InstanceType'], volumeSize, curr['KeyName'], curr['PublicIpAddress'], curr['SecurityGroups'][0]['GroupName'], curr['RootDeviceName']))
