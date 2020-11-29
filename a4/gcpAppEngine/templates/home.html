@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <title>Home</title>
+    <meta name="author" content="Kaylee Bigelow">
+    <meta name="description" content="home page of a website to help people visit Niagara Falls">
+    <link rel="stylesheet" href="{{ url_for('static', filename='webstyle.css') }}">
+    </head>
+    <body>
+        <div class="headerdesign">
+            <h1>How to be a tourist in Niagara Falls</h1>
+            <h3>(But not act like one)</h3>
+        </div>
+          
+        <div class="navbar">
+            <a href="home.html">Home</a>
+            <a href="one.html">Attractions</a>
+            <a href="two.html">Money saving Tips</a>
+            <a href="404.html">Bad Link</a>
+        </div>
+        <div id="start", class="archingDiv">
+            <div class="divTable">
+                <figure class="figureLeft">
+                    <img src="{{ url_for('static', filename='pic1.jpg') }}" alt="The American Falls with the Horn Blower boat in the river." width="90%" height="40%">
+                    <figcaption>The American Falls with the Horn Blower</figcaption>
+                </figure>
+                <div class="textRight">
+                </br></br>
+                    <h2>Are you looking to travel to Niagara Falls? Do you not want to stand out to the locals as a tourist? </h2>
+                    <h3>Follow this easy guide to not make the locals hate you!</h3>
+                    <p>Looking to get away next summer? Always wanted to see the "wonderful" Niagara Falls? Well then get up and go do it! 
+                       Everyone wants to see the beautiful Niagara Falls once in their lives, and to see it is awe-inspiring. However, to
+                       those who live in Niagara the tourists can be annoying. The next 3 pages give you tips, planning advice and things 
+                       to avoid while visiting Niagara Falls.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div id="questions", class="archingDiv">
+            <h2>Questions to Avoid</h2>
+            <div class="divTable"">
+                <figure class="figureRight">
+                    <img src="{{ url_for('static', filename='pic9.jpg') }}" alt="AreoCar over the niagara whirlpool." width="90%" height="50%">
+                    <figcaption>View of the AreoCar over the whirlpool</figcaption>
+                </figure>
+                <div class="textLeft">
+                </br>
+                    <p>Often as a local you get asked questions by tourists all the time! Some questions are understandable, and we 
+                       locals will love to help; but other questions are downright stupid. Stupid questions should be avoided at
+                       all costs as sometimes locals like to mess with the tourists...</p>
+                    <div class="leftAlignText">
+                        <h4>Types of questions that will gladly be answered</h4>
+                        <ul>
+                            <li>Facts about Niagara Falls</li>
+                            <li>Directions to hotels or attractions</li>
+                            <li>Places to park and eat</li>
+                        </ul>
+                        <h4>Types of questions to avoid</h4>
+                        <ul>
+                            <li>Our favourite attractions (we live here we rarely do them)</li>
+                            <li>Directions to things you can see (happens more than you think)</li>
+                        </ul>
+                        <h4>Questions I have been asked...</h4>
+                        <ul>
+                            <li>What time does the rainbow turn off?</li>
+                            <li>Is this Canada?</li>
+                            <li>Why is this so expensive? (We do not set the prices!)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            </br>
+            <figure>
+                <img src="{{ url_for('static', filename='pic5.jpg') }}" alt="The American Falls." width="90%" height="60%">
+                <figcaption>The American Falls - one of the 3 waterfalls that make up Niagara Falls</figcaption>
+            </figure>
+        </br>
+        </div>
+        </div>
+        <footer class="footer">
+            <p>Author: Kaylee Bigelow - About: I grew up in Niagara Falls so all information not cited it based on my experiences!<br>
+            <a href="mailto:kbigelow@uoguelph.ca">kbigelow@uoguelph.ca</a></p>
+        </footer> 
+    </body>
+</html>
