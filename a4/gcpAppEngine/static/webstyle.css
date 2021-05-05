@@ -1,0 +1,97 @@
+.navbar {
+    overflow: hidden;
+    background-color: #333;
+    position: sticky;
+    position: -webkit-sticky;
+    top: 0;
+}
+
+.navbar a {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+}
+
+.navbar a:hover {
+    background-color: rgb(150, 148, 148);
+    color: black;
+}
+
+.headerdesign {
+    padding: 10px;
+    text-align: center;
+    background: #70ddeb;
+    color: black;
+}
+
+.centeredText {
+    padding: 10px;
+    text-align: center;
+}
+
+.leftAlignText {
+    padding: 10px;
+    text-align: left;
+}
+
+hr.dashed {
+    border: 2px dashed;
+}
+
+
+
+#page-container {
+    position: relative;
+    min-height: 100vh;
+  }
+  
+  
+  .footer {
+    position: relative;
+    bottom: 0;
+    width: 99%;
+    /*height: 2.5rem;            /* Footer height */
+    text-align: center;
+    background: #70ddeb;
+  }
+
+  .figureLeft {
+    width: 44%; 
+    float:left; 
+    padding-top: 2%; 
+  }
+
+  .textRight {
+    width: 48%; 
+    float:right;
+    text-align:center;
+    padding-top: 1%;
+    padding-right: 2%;
+  }
+
+  .textLeft {
+    width: 48%; 
+    float:left;
+    text-align:center;
+    padding-top: 1%;
+    padding-left: 2%;
+  }
+
+  .archingDiv {
+    margin:auto;
+    text-align:center;
+    padding-top: 3%;
+  }
+
+  .figureRight {
+    width: 44%; 
+    float:right;
+    padding-top: 2%; 
+  }
+
+  .divTable {
+    display: table;
+  }

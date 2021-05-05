@@ -1,0 +1,36 @@
+Name: Kaylee Bigelow
+Date: November 3, 2020
+
+Assignment 2 - Part 2
+
+AWS’ ec2 dashboard allows for users to create instances by only a few clicks of a button as they 
+walk you through the steps to create your own ec2 instance. These steps are very useful to those 
+who do not know what exactly they want out of their instance or just need a basic setup. When 
+compared to my script it does not allow as much functionality to be put in place with a single 
+step. The AWS console does not allow for the creation of anything internal to the instance (such 
+as docker images). My script allows for more specification from the user; however, it requires 
+the user to have knowledge on AWS ec2 instances prior to running the script.
+
+Another feature AWS has for launching ec2 instances is CloudFormation. CloudFormation allows the 
+user to create ec2 instances using a template much like my script. It allows for the installation 
+of applications directly onto the ec2 instances without having to SSH into the instance. As well, 
+it allows for the configuration of applications along with the ability to start them up. When 
+compared to my program the functionality is very similar as if the user wants to install or start 
+applications, they can add these steps into the bash script that they provide. The knowledge 
+needed for both my script and CloudFormation is the same, one must know what they are selecting 
+and what is required to start their ec2 instances correctly.
+
+To monitor your ec2 instances one can use the AWS’ feature called CloudWatch. CloudWatch allows 
+for the creation of alarms, events, and the ability see logs. This monitoring is much more advanced 
+than the monitor script that I created, as it allows the user to see everything my script displays 
+plus more on a nice console that guides the user in the creation of alarms and events. CloudWatch 
+will show the user health status, instance state, instance metric details, volume metric details, 
+and much more that auto update based on events that take place inside your instance.
+
+Overall AWS has many different services that help the user in the creation and monitoring of their 
+ec2 instances. The ec2 dashboard is helpful for a new user of AWS as it is the simplest to understand 
+and use. CloudFormation is a great feature for a user who does not want to build their own script 
+like mine. CloudFormation has many similarities to my launch script and both require the same 
+knowledge of ec2 instances to use. Finally, CloudWatch monitoring is a great tool to see and check on 
+your ec2 instances. It has a lot more features than my monitor script, plus it allows the user to make 
+alarms so they can get notified if something has gone wrong with their instance. 
